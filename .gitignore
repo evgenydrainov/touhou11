@@ -1,0 +1,5 @@
+build/
+build-*/
+assets_baked/
+*.generated.cpp
+*.generated.h
