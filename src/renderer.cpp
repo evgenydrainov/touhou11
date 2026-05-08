@@ -201,7 +201,7 @@ DrawSprite(Renderer *renderer,
 {
 	SpriteInfo *info = GetSpriteInfo(sprite_index);
 	SpriteFrame frame = GetSpriteFrame(info, frame_index);
-	TextureAsset *texture = AssetGetTexture(assets, info->texture_index);
+	TextureAsset *texture = AssetGetTexture(assets, info->textureIndex);
 
 	DrawSpriteFrame(renderer, backend,
 					info->xorigin, info->yorigin,
@@ -223,7 +223,7 @@ DrawSprite(Renderer *renderer,
 {
 	SpriteInfo *info = GetSpriteInfo(sprite_index);
 	SpriteFrame frame = GetSpriteFrame(info, frame_index);
-	TextureAsset *texture = AssetGetTexture(assets, info->texture_index);
+	TextureAsset *texture = AssetGetTexture(assets, info->textureIndex);
 
 	DrawSpriteFrame(renderer, backend,
 					info->xorigin, info->yorigin,
@@ -245,7 +245,7 @@ DrawText(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
 		 vec4 color)
 {
 	FontInfo *info = GetFontInfo(font_index);
-	TextureAsset *texture = AssetGetTexture(assets, info->texture_index);
+	TextureAsset *texture = AssetGetTexture(assets, info->textureIndex);
 
 	float x = pos_x;
 	float y = pos_y;
@@ -278,7 +278,7 @@ DrawText(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
 		if (ch == '\n')
 		{
 			x = pos_x;
-			y += info->line_height * yscale;
+			y += info->lineHeight * yscale;
 
 			if (halign == HAlign_Center)
 			{
@@ -350,7 +350,7 @@ GetTextSize(Renderer *renderer,
 			}
 
 			x = 0;
-			y += yscale*info->line_height;
+			y += yscale*info->lineHeight;
 
 			height = Max(height, y + yscale*info->height);
 		}

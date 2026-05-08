@@ -157,7 +157,7 @@ UpdatePlayer(Player *player,
 		{
 			SpriteInfo *sprInfo = GetSpriteInfo(player->spriteIndex);
 
-			player->frameIndex -= sprInfo->anim_spd * input->delta;
+			player->frameIndex -= sprInfo->animSpeed * input->delta;
 			player->frameIndex = Min(player->frameIndex, 3.0f);
 
 			if (player->frameIndex < 0)
@@ -541,7 +541,7 @@ WorldUpdate(World *world,
 			if (enemy->spriteIndex != enemy->sprIdle)
 			{
 				enemy->frameIndex = Min(enemy->frameIndex, 4.0f);
-				enemy->frameIndex -= GetSpriteInfo(enemy->spriteIndex)->anim_spd * input->delta;
+				enemy->frameIndex -= GetSpriteInfo(enemy->spriteIndex)->animSpeed * input->delta;
 
 				if (enemy->frameIndex < 1.0f)
 				{
@@ -1026,7 +1026,7 @@ GameRenderPlayAreaPass(Renderer *renderer,
 		Particle *particle = &world->particles[particleIndex];
 		ParticleTypeInfo *info = GetParticleTypeInfo(particle->type);
 
-		f32 frameIndex = GetSpriteInfo(info->spriteIndex)->anim_spd * particle->lifeTime;
+		f32 frameIndex = GetSpriteInfo(info->spriteIndex)->animSpeed * particle->lifeTime;
 		frameIndex = SpriteAnimate(info->spriteIndex, frameIndex, 0);
 
 		f32 t = particle->lifeTime/info->lifeSpan;
@@ -1228,10 +1228,10 @@ GameInit(Game *game,
 	{
 		LoadTextureAsset(&assets->textures[i],
 						 backend,
-						 g_texture_info[i].filepath,
+						 g_textureInfo[i].filePath,
 						 &game->textureArena,
 						 &memory->transientArena,
-						 g_texture_info[i].wantMipMap);
+						 g_textureInfo[i].wantMipMap);
 	}
 	
 	RendererInit(&game->renderer,

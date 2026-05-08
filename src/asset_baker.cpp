@@ -91,19 +91,19 @@ struct RawTextureInfo
 struct RawSpriteInfo
 {
 	const char *name;
-	RawTextureIndex texture_index;
+	RawTextureIndex textureIndex;
 	int u;
 	int v;
 	int width;
 	int height;
 	int xorigin;
 	int yorigin;
-	int num_frames;
-	int num_frames_in_row;
-	float anim_spd;
-	int loop_frame;
+	int numFrames;
+	int numFramesInRow;
+	float animSpeed;
+	int loopFrame;
 
-	int baked_atlas_index;
+	int bakedAtlasIndex;
 };
 
 struct RawFontInfo
@@ -527,25 +527,25 @@ PutSpriteIntoAtlas(RawSpriteInfo *info)
 {
 	LogInfo("Baking sprite %s...", info->name);
 
-	Image texture = g_raw_textures[info->texture_index];
+	Image texture = g_raw_textures[info->textureIndex];
 
 	fprintf(g_asset_info_cpp_file, "static SpriteFrame g_frames_for_%s[] = {\n", info->name);
 
-	if (info->num_frames == 0)
+	if (info->numFrames == 0)
 	{
-		info->num_frames = 1;
+		info->numFrames = 1;
 	}
 
-	if (info->num_frames_in_row == 0)
+	if (info->numFramesInRow == 0)
 	{
-		info->num_frames_in_row = info->num_frames;
+		info->numFramesInRow = info->numFrames;
 	}
 
-	for (int frame_index = 0; frame_index < info->num_frames; frame_index++)
+	for (int frame_index = 0; frame_index < info->numFrames; frame_index++)
 	{
 		//LogInfo("Baking frame %d...", frame_index);
 
-		int num_frames_in_row = info->num_frames_in_row;
+		int num_frames_in_row = info->numFramesInRow;
 
 		int sprite_frame_u = info->u + info->width*(frame_index % num_frames_in_row);
 		int sprite_frame_v = info->v + info->height*(frame_index / num_frames_in_row);
@@ -580,37 +580,37 @@ PutSpriteIntoAtlas(RawSpriteInfo *info)
 
 	g_saved_sprite_infos = (RawSpriteInfo *)realloc(g_saved_sprite_infos, (g_saved_sprite_infos_count + 1) * sizeof(RawSpriteInfo));
 	g_saved_sprite_infos[g_saved_sprite_infos_count] = *info;
-	g_saved_sprite_infos[g_saved_sprite_infos_count].baked_atlas_index = g_current_atlas_index;
+	g_saved_sprite_infos[g_saved_sprite_infos_count].bakedAtlasIndex = g_current_atlas_index;
 	g_saved_sprite_infos_count++;
 }
 
 static void
 PutSpriteIntoAtlas(const char *name,
-				   RawTextureIndex texture_index,
+				   RawTextureIndex textureIndex,
 				   int u,
 				   int v,
 				   int width,
 				   int height,
 				   int xorigin = 0,
 				   int yorigin = 0,
-				   int num_frames = 0,
-				   int num_frames_in_row = 0,
-				   float anim_spd = 0,
-				   int loop_frame = 0)
+				   int numFrames = 0,
+				   int numFramesInRow = 0,
+				   float animSpeed = 0,
+				   int loopFrame = 0)
 {
 	RawSpriteInfo info = {};
 	info.name = name;
-	info.texture_index = texture_index;
+	info.textureIndex = textureIndex;
 	info.u = u;
 	info.v = v;
 	info.width = width;
 	info.height = height;
 	info.xorigin = xorigin;
 	info.yorigin = yorigin;
-	info.num_frames = num_frames;
-	info.num_frames_in_row = num_frames_in_row;
-	info.anim_spd = anim_spd;
-	info.loop_frame = loop_frame;
+	info.numFrames = numFrames;
+	info.numFramesInRow = numFramesInRow;
+	info.animSpeed = animSpeed;
+	info.loopFrame = loopFrame;
 
 	PutSpriteIntoAtlas(&info);
 }
@@ -647,7 +647,7 @@ TryOpenFileForWriting(const char *filepath)
 static char ASSET_INFO_H_PREAMBLE[] =
 R"(struct TextureInfo
 {
-	const char *filepath;
+	const char *filePath;
 	bool wantMipMap;
 };
 
@@ -664,14 +664,14 @@ struct SpriteFrame
 struct SpriteInfo
 {
 	SpriteFrame *frames;
-	TextureIndex texture_index;
+	TextureIndex textureIndex;
 	int width;
 	int height;
 	int xorigin;
 	int yorigin;
-	int num_frames;
-	float anim_spd;
-	int loop_frame;
+	int numFrames;
+	float animSpeed;
+	int loopFrame;
 };
 
 struct FontGlyph
@@ -688,15 +688,15 @@ struct FontGlyph
 struct FontInfo
 {
 	FontGlyph *glyphs;
-	TextureIndex texture_index;
-	int num_glyphs;
-	int line_height;
+	TextureIndex textureIndex;
+	int numGlyphs;
+	int lineHeight;
 	int height;
 };
 
-extern TextureInfo g_texture_info[TextureIndex_COUNT];
-extern SpriteInfo g_sprite_info[SpriteIndex_COUNT];
-extern FontInfo g_font_info[FontIndex_COUNT];
+extern TextureInfo g_textureInfo[TextureIndex_COUNT];
+extern SpriteInfo g_spriteInfo[SpriteIndex_COUNT];
+extern FontInfo g_fontInfo[FontIndex_COUNT];
 )";
 
 static void
@@ -957,35 +957,35 @@ static void
 EndAssetBaker()
 {
 	{
-		fprintf(g_asset_info_cpp_file, "SpriteInfo g_sprite_info[SpriteIndex_COUNT] = {\n");
+		fprintf(g_asset_info_cpp_file, "SpriteInfo g_spriteInfo[SpriteIndex_COUNT] = {\n");
 		for (int sprite_index = 0; sprite_index < g_saved_sprite_infos_count; sprite_index++)
 		{
 			RawSpriteInfo *info = &g_saved_sprite_infos[sprite_index];
 			fprintf(g_asset_info_cpp_file, "    /* [%s] = */ {\n", info->name);
 			fprintf(g_asset_info_cpp_file, "        /* .frames = */ g_frames_for_%s,\n", info->name);
-			fprintf(g_asset_info_cpp_file, "        /* .texture_index = */ tex_generated_atlas_%d,\n", info->baked_atlas_index);
+			fprintf(g_asset_info_cpp_file, "        /* .textureIndex = */ tex_generated_atlas_%d,\n", info->bakedAtlasIndex);
 			fprintf(g_asset_info_cpp_file, "        /* .width = */ %d,\n", info->width);
 			fprintf(g_asset_info_cpp_file, "        /* .height = */ %d,\n", info->height);
 			fprintf(g_asset_info_cpp_file, "        /* .xorigin = */ %d,\n", info->xorigin);
 			fprintf(g_asset_info_cpp_file, "        /* .yorigin = */ %d,\n", info->yorigin);
-			fprintf(g_asset_info_cpp_file, "        /* .num_frames = */ %d,\n", info->num_frames);
-			fprintf(g_asset_info_cpp_file, "        /* .anim_spd = */ %ff,\n", info->anim_spd);
-			fprintf(g_asset_info_cpp_file, "        /* .loop_frame = */ %d,\n", info->loop_frame);
+			fprintf(g_asset_info_cpp_file, "        /* .numFrames = */ %d,\n", info->numFrames);
+			fprintf(g_asset_info_cpp_file, "        /* .animSpeed = */ %ff,\n", info->animSpeed);
+			fprintf(g_asset_info_cpp_file, "        /* .loopFrame = */ %d,\n", info->loopFrame);
 			fprintf(g_asset_info_cpp_file, "    },\n");
 		}
 		fprintf(g_asset_info_cpp_file, "};\n\n");
 	}
 
 	{
-		fprintf(g_asset_info_cpp_file, "FontInfo g_font_info[FontIndex_COUNT] = {\n");
+		fprintf(g_asset_info_cpp_file, "FontInfo g_fontInfo[FontIndex_COUNT] = {\n");
 		for (int font_index = 0; font_index < g_saved_font_infos_count; font_index++)
 		{
 			RawFontInfo *info = &g_saved_font_infos[font_index];
 			fprintf(g_asset_info_cpp_file, "    /* [%s] = */ {\n", info->name);
 			fprintf(g_asset_info_cpp_file, "        /* .glyphs = */ g_glyphs_for_%s,\n", info->name);
-			fprintf(g_asset_info_cpp_file, "        /* .texture_index = */ tex_generated_atlas_%d,\n", info->baked_atlas_index);
-			fprintf(g_asset_info_cpp_file, "        /* .num_glyphs = */ %d,\n", info->num_glyphs);
-			fprintf(g_asset_info_cpp_file, "        /* .line_height = */ %d,\n", info->line_height);
+			fprintf(g_asset_info_cpp_file, "        /* .textureIndex = */ tex_generated_atlas_%d,\n", info->baked_atlas_index);
+			fprintf(g_asset_info_cpp_file, "        /* .numGlyphs = */ %d,\n", info->num_glyphs);
+			fprintf(g_asset_info_cpp_file, "        /* .lineHeight = */ %d,\n", info->line_height);
 			fprintf(g_asset_info_cpp_file, "        /* .height = */ %d,\n", info->height);
 			fprintf(g_asset_info_cpp_file, "    },\n");
 		}
@@ -993,13 +993,13 @@ EndAssetBaker()
 	}
 
 	{
-		fprintf(g_asset_info_cpp_file, "TextureInfo g_texture_info[TextureIndex_COUNT] = {\n");
+		fprintf(g_asset_info_cpp_file, "TextureInfo g_textureInfo[TextureIndex_COUNT] = {\n");
 		for (int i = 0; i < RawTextureIndex_COUNT; i++)
 		{
 			if (g_raw_texture_info[i].includeInGame)
 			{
 				fprintf(g_asset_info_cpp_file, "    /* [%s] = */ {\n", g_raw_texture_info[i].name);
-				fprintf(g_asset_info_cpp_file, "        /* .filepath = */ \"%s.qoi\",\n", g_raw_texture_info[i].name);
+				fprintf(g_asset_info_cpp_file, "        /* .filePath = */ \"%s.qoi\",\n", g_raw_texture_info[i].name);
 				fprintf(g_asset_info_cpp_file, "        /* .wantMipMap = */ %d,\n", (int)g_raw_texture_info[i].wantMipMap);
 				fprintf(g_asset_info_cpp_file, "    },\n");
 			}
