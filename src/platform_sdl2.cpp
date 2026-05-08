@@ -436,12 +436,16 @@ PlatformSDL2SetFullscreen(SDL2PlatformState *state, bool fullscreen)
 {
 	if (fullscreen)
 	{
+#if 0
 		SDL_DisplayMode mode;
 		int display = SDL_GetWindowDisplayIndex(state->window);
 		SDL_GetDesktopDisplayMode(display, &mode);
 		SDL_SetWindowDisplayMode(state->window, &mode);
 
 		SDL_SetWindowFullscreen(state->window, SDL_WINDOW_FULLSCREEN);
+#else
+		SDL_SetWindowFullscreen(state->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+#endif
 	}
 	else
 	{
