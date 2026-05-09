@@ -235,6 +235,27 @@ CreateEnemyC(World *world, EnemyType type,
  *  Shoot variants
  */
 
+inline f32
+GetBulletRadius(SpriteIndex spriteIndex)
+{
+	switch (spriteIndex)
+	{
+		case spr_bullet_arrow:
+		case spr_bullet_outline:
+		case spr_bullet_rice:
+		case spr_bullet_kunai:
+		case spr_bullet_pellet:
+		case spr_bullet_card:
+		case spr_bullet_bullet: return 2.5f;
+		case spr_bullet_filled: return 3.5f;
+
+		default: {}
+	}
+
+	Assert(false);
+	return 0.0f;
+}
+
 inline Bullet *
 ShootX(World *world,
 	   f32 x, f32 y,
@@ -248,8 +269,7 @@ ShootX(World *world,
 	bullet->yVel = yVel;
 	bullet->spriteIndex = spriteIndex;
 	bullet->frameIndex = frameIndex;
-
-	// TODO: set radius based on sprite
+	bullet->radius = GetBulletRadius(spriteIndex);
 
 	PlatformPlaySound(snd_enemy_shoot);
 

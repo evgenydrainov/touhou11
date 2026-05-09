@@ -40,6 +40,7 @@ bool OpenGLRenderBackendPrepareDraw(RenderBackend *backend);
 void OpenGLRenderBackendPresent(RenderBackend *backend);
 RENDER_BACKEND_DRAW_QUADS(OpenGLRenderBackendDrawQuads);
 RENDER_BACKEND_DRAW_TRIANGLES_3D(OpenGLRenderBackendDrawTriangles3D);
+RENDER_BACKEND_DRAW_CIRCLES(OpenGLRenderBackendDrawCircles);
 RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(OpenGLRenderBackendUploadTextureAsset);
 RENDER_BACKEND_CLEAR(OpenGLRenderBackendClear);
 RENDER_BACKEND_SET_VIEWPORT(OpenGLRenderBackendSetViewport);

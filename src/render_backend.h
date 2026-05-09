@@ -44,12 +44,14 @@ enum ShaderIndex : u32
 	ShaderIndex_Normal,
 	ShaderIndex_Normal3D,
 	ShaderIndex_Fog3D,
+	ShaderIndex_Circle,
 
 	ShaderIndex_COUNT,
 };
 
 #define RENDER_BACKEND_DRAW_QUADS(Name)            void Name(RenderBackend *backend, TextureAsset *texture, RenderVertex2D *vertices, int num_vertices)
 #define RENDER_BACKEND_DRAW_TRIANGLES_3D(Name)     void Name(RenderBackend *backend, TextureAsset *texture, RenderVertex3D *vertices, int num_vertices)
+#define RENDER_BACKEND_DRAW_CIRCLES(Name)          void Name(RenderBackend *backend, TextureAsset *texture, RenderVertex2D *vertices, int num_vertices)
 #define RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(Name)  bool Name(RenderBackend *backend, TextureAsset *texture)
 #define RENDER_BACKEND_CLEAR(Name)                 void Name(RenderBackend *backend, float r, float g, float b, float a)
 #define RENDER_BACKEND_SET_VIEWPORT(Name)          void Name(RenderBackend *backend, int x, int y, int width, int height)
@@ -59,6 +61,7 @@ enum ShaderIndex : u32
 
 typedef RENDER_BACKEND_DRAW_QUADS(RenderBackend_DrawQuads);
 typedef RENDER_BACKEND_DRAW_TRIANGLES_3D(RenderBackend_DrawTriangles3D);
+typedef RENDER_BACKEND_DRAW_CIRCLES(RenderBackend_DrawCircles);
 typedef RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(RenderBackend_UploadTextureAsset);
 typedef RENDER_BACKEND_CLEAR(RenderBackend_Clear);
 typedef RENDER_BACKEND_SET_VIEWPORT(RenderBackend_SetViewport);
@@ -94,6 +97,7 @@ struct RenderBackend
 
 	RenderBackend_DrawQuads           *DrawQuads;
 	RenderBackend_DrawTriangles3D     *DrawTriangles3D;
+	RenderBackend_DrawCircles         *DrawCircles;
 	RenderBackend_UploadTextureAsset  *UploadTextureAsset;
 	RenderBackend_Clear               *Clear;
 	RenderBackend_SetViewport         *SetViewport;

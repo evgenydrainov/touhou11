@@ -90,6 +90,39 @@ union vec4
 	}
 };
 
+inline vec2
+V2(f32 x, f32 y)
+{
+	vec2 result;
+	result.x = x;
+	result.y = y;
+
+	return result;
+}
+
+inline vec3
+V3(f32 x, f32 y, f32 z)
+{
+	vec3 result;
+	result.x = x;
+	result.y = y;
+	result.z = z;
+
+	return result;
+}
+
+inline vec4
+V4(f32 x, f32 y, f32 z, f32 w)
+{
+	vec4 result;
+	result.x = x;
+	result.y = y;
+	result.z = z;
+	result.w = w;
+
+	return result;
+}
+
 template <typename T>
 inline T
 Abs(T value)

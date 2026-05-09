@@ -601,6 +601,10 @@ PlatformSDL2HandleEvent(SDL2PlatformState *state, SDL_Event *event)
 				{
 					state->gameInput.DEBUG_KeyRPressed = true;
 				}
+				else if (event->key.keysym.scancode == SDL_SCANCODE_H)
+				{
+					state->gameInput.DEBUG_KeyHPressed = true;
+				}
 				else if (event->key.keysym.scancode == SDL_SCANCODE_1)
 				{
 					state->gameInput.DEBUG_Key1Pressed = true;
@@ -624,6 +628,7 @@ static void
 PlatformSDL2HandleEvents(SDL2PlatformState *state)
 {
 	state->gameInput.DEBUG_KeyRPressed = false;
+	state->gameInput.DEBUG_KeyHPressed = false;
 	state->gameInput.DEBUG_Key1Pressed = false;
 
 	SDL_Event event;
@@ -906,10 +911,14 @@ PlatformSDL2Main()
 	{
 		g_soundChunks[snd_enemy_shoot] = Mix_LoadWAV("assets_raw/sounds/enemy_shoot.wav");
 		g_soundChunks[snd_reimu_shoot] = Mix_LoadWAV("assets_raw/sounds/reimu_shoot.wav");
-		g_soundChunks[snd_enemy_hurt] = Mix_LoadWAV("assets_raw/sounds/enemy_hurt.wav");
-		g_soundChunks[snd_enemy_die] = Mix_LoadWAV("assets_raw/sounds/enemy_die.wav");
+		g_soundChunks[snd_enemy_hurt]  = Mix_LoadWAV("assets_raw/sounds/enemy_hurt.wav");
+		g_soundChunks[snd_enemy_die]   = Mix_LoadWAV("assets_raw/sounds/enemy_die.wav");
+		g_soundChunks[snd_pichuun]     = Mix_LoadWAV("assets_raw/sounds/pichuun.wav");
 
-		Mix_VolumeChunk(g_soundChunks[snd_enemy_shoot], (int)(0.50f*MIX_MAX_VOLUME));
+		if (g_soundChunks[snd_enemy_shoot])
+		{
+			Mix_VolumeChunk(g_soundChunks[snd_enemy_shoot], (int)(0.50f*MIX_MAX_VOLUME));
+		}
 	}
 
 	//SDL_SetRelativeMouseMode(SDL_TRUE);

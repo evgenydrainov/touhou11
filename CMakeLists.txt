@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
+set(CMAKE_UNITY_BUILD ON)
+set(CMAKE_UNITY_BUILD_BATCH_SIZE 64)
+
 # for clang
 set(CMAKE_CXX_STANDARD 17)
 

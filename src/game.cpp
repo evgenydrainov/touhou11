@@ -72,109 +72,235 @@ GetParticleTypeInfo(ParticleType type)
 	return &g_particleTypeInfo[type];
 }
 
+static Pickup *
+CreatePickup(World *world, vec2 pos, PickupType type)
+{
+	Pickup *pickup = AllocatePickup(world);
+	pickup->pos = pos;
+	pickup->type = type;
+	pickup->vel = {0.0f, -2.0f};
+	pickup->radius = 6.0f;
+
+	return pickup;
+}
+
+static void
+RecreatePlayer(Player *player)
+{
+	CharacterInfo *characterInfo = GetCharacterInfo(player->characterIndex);
+
+	*player = {};
+	player->pos = PLAYER_STARTING_POS;
+	player->spriteIndex = characterInfo->sprIdle;
+	player->iframes = PLAYER_RESPAWN_IFRAMES;
+
+	player->state = PlayerState_Appearing;
+	player->timer = 0.0f;
+}
+
+static void
+PlayerTryUseBomb(World *world,
+				 Player *player,
+				 GameInput *input)
+{
+	CharacterInfo *characterInfo = GetCharacterInfo(player->characterIndex);
+
+	if (IsKeyPressed(input, 0, GameInputKey_B))
+	{
+		if (player->bombCoolDownTimer <= 0.0f)
+		{
+			if (world->stats.bombs > 0)
+			{
+				if (characterInfo->Bomb)
+				{
+					characterInfo->Bomb(player, world);
+				}
+
+				world->stats.bombs--;
+
+				player->bombCoolDownTimer = PLAYER_BOMB_COOLDOWN_TIME;
+				player->iframes = PLAYER_RESPAWN_IFRAMES;
+
+				// deathbomb
+				player->state = PlayerState_Normal;
+			}
+		}
+	}
+}
+
 static void
 UpdatePlayer(Player *player,
 			 World *world,
 			 GameInput *input)
 {
-	// :Update Player
+	// :update player
 
-	CharacterInfo *info = GetCharacterInfo(player->characterIndex);
+	CharacterInfo *characterInfo = GetCharacterInfo(player->characterIndex);
 
-	vec2 moveDir = {};
+	player->vel = {};
 
-	if (IsKeyDown(input, 0, GameInputKey_UP))
+	switch (player->state)
 	{
-		moveDir.y -= 1.0f;
-	}
-	if (IsKeyDown(input, 0, GameInputKey_DOWN))
-	{
-		moveDir.y += 1.0f;
-	}
-	if (IsKeyDown(input, 0, GameInputKey_LEFT))
-	{
-		moveDir.x -= 1.0f;
-	}
-	if (IsKeyDown(input, 0, GameInputKey_RIGHT))
-	{
-		moveDir.x += 1.0f;
-	}
-
-	moveDir = Normalize0(moveDir);
-
-	{
-		f32 moveSpeed = info->moveSpeed;
-		f32 hitboxAnimTarget = 0.0f;
-
-		if (IsKeyDown(input, 0, GameInputKey_X))
+		case PlayerState_Normal:
 		{
-			moveSpeed = info->focusSpeed;
-			hitboxAnimTarget = 1.0f;
-		}
+			vec2 moveDir = {};
 
-		player->hitboxAnim = Approach(player->hitboxAnim, hitboxAnimTarget, 0.1f*input->delta);
-
-		player->vel = moveSpeed*moveDir;
-	}
-
-	if (moveDir.x < 0.0f)
-	{
-		if (player->frameIndex < 4)
-		{
-			player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, 2*input->delta);
-		}
-		else
-		{
-			player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, input->delta);
-		}
-
-		if (player->spriteIndex != info->sprMoveLeft)
-		{
-			player->spriteIndex = info->sprMoveLeft;
-			player->frameIndex = 0;
-		}
-	}
-	else if (moveDir.x > 0.0f)
-	{
-		if (player->frameIndex < 4)
-		{
-			player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, 2*input->delta);
-		}
-		else
-		{
-			player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, input->delta);
-		}
-
-		if (player->spriteIndex != info->sprMoveRight)
-		{
-			player->spriteIndex = info->sprMoveRight;
-			player->frameIndex = 0;
-		}
-	}
-	else
-	{
-		if (player->spriteIndex == info->sprMoveLeft || player->spriteIndex == info->sprMoveRight)
-		{
-			SpriteInfo *sprInfo = GetSpriteInfo(player->spriteIndex);
-
-			player->frameIndex -= sprInfo->animSpeed * input->delta;
-			player->frameIndex = Min(player->frameIndex, 3.0f);
-
-			if (player->frameIndex < 0)
+			if (IsKeyDown(input, 0, GameInputKey_UP))
 			{
-				player->spriteIndex = info->sprIdle;
-				player->frameIndex = 0;
+				moveDir.y -= 1.0f;
 			}
-		}
-		else
-		{
-			player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, input->delta);
-		}
-	}
+			if (IsKeyDown(input, 0, GameInputKey_DOWN))
+			{
+				moveDir.y += 1.0f;
+			}
+			if (IsKeyDown(input, 0, GameInputKey_LEFT))
+			{
+				moveDir.x -= 1.0f;
+			}
+			if (IsKeyDown(input, 0, GameInputKey_RIGHT))
+			{
+				moveDir.x += 1.0f;
+			}
 
-	if (info->ShotType)
-	{
-		info->ShotType(player, world, input);
+			moveDir = Normalize0(moveDir);
+
+			{
+				f32 moveSpeed = characterInfo->moveSpeed;
+				f32 hitboxAnimTarget = 0.0f;
+
+				if (IsKeyDown(input, 0, GameInputKey_X))
+				{
+					moveSpeed = characterInfo->focusSpeed;
+					hitboxAnimTarget = 1.0f;
+				}
+
+				player->hitboxAnim = Approach(player->hitboxAnim, hitboxAnimTarget, 0.1f*input->delta);
+
+				player->vel = moveSpeed*moveDir;
+			}
+
+			if (moveDir.x < 0.0f)
+			{
+				if (player->frameIndex < 4)
+				{
+					player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, 2*input->delta);
+				}
+				else
+				{
+					player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, input->delta);
+				}
+
+				if (player->spriteIndex != characterInfo->sprMoveLeft)
+				{
+					player->spriteIndex = characterInfo->sprMoveLeft;
+					player->frameIndex = 0;
+				}
+			}
+			else if (moveDir.x > 0.0f)
+			{
+				if (player->frameIndex < 4)
+				{
+					player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, 2*input->delta);
+				}
+				else
+				{
+					player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, input->delta);
+				}
+
+				if (player->spriteIndex != characterInfo->sprMoveRight)
+				{
+					player->spriteIndex = characterInfo->sprMoveRight;
+					player->frameIndex = 0;
+				}
+			}
+			else
+			{
+				if (player->spriteIndex == characterInfo->sprMoveLeft
+					|| player->spriteIndex == characterInfo->sprMoveRight)
+				{
+					SpriteInfo *sprInfo = GetSpriteInfo(player->spriteIndex);
+
+					player->frameIndex -= sprInfo->animSpeed * input->delta;
+					player->frameIndex = Min(player->frameIndex, 3.0f);
+
+					if (player->frameIndex < 0)
+					{
+						player->spriteIndex = characterInfo->sprIdle;
+						player->frameIndex = 0;
+					}
+				}
+				else
+				{
+					player->frameIndex = SpriteAnimate(player->spriteIndex, player->frameIndex, input->delta);
+				}
+			}
+
+			if (characterInfo->ShotType)
+			{
+				characterInfo->ShotType(player, world, input);
+			}
+
+			player->iframes = Max(player->iframes - input->delta, 0.0f);
+		} break;
+
+		case PlayerState_Dying:
+		{
+			player->timer += input->delta;
+
+			if (player->timer <= characterInfo->deathbombTime)
+			{
+				PlayerTryUseBomb(world, player, input);
+			}
+			else
+			{
+				if (player->timer >= PLAYER_DEATH_TIME)
+				{
+					if (world->stats.lives > 0)
+					{
+						world->stats.lives--;
+
+						int drop = Min(world->stats.power, 16);
+						world->stats.power -= drop;
+
+						drop = Min(drop, 12);
+
+						while (drop > 0)
+						{
+							PickupType type = PickupType_Power;
+							if (drop >= 8)
+							{
+								drop -= 8;
+								type = PickupType_BigPower;
+							}
+							else
+							{
+								drop--;
+							}
+
+							vec2 pos = player->pos + V2(RandomRangeFloat32(&world->stageRNG, -50.0f, 50.0f),
+														RandomRangeFloat32(&world->stageRNG, -50.0f, 50.0f));
+							CreatePickup(world, pos, type);
+						}
+					}
+					else
+					{
+						// game over
+						CreatePickup(world, player->pos, PickupType_FullPower);
+					}
+					
+					RecreatePlayer(player);
+				}
+			}
+		} break;
+
+		case PlayerState_Appearing:
+		{
+			player->timer += input->delta;
+			if (player->timer >= PLAYER_APPEAR_TIME)
+			{
+				player->state = PlayerState_Normal;
+			}
+		} break;
 	}
 }
 
@@ -351,7 +477,9 @@ WorldPhysicsUpdate(World *world,
 	}
 
 	// :move bullets
-	for (int bulletIndex = 0; bulletIndex < world->numBullets; bulletIndex++)
+	for (int bulletIndex = 0;
+		 bulletIndex < world->numBullets;
+		 bulletIndex++)
 	{
 		Bullet *bullet = &world->bullets[bulletIndex];
 
@@ -360,7 +488,9 @@ WorldPhysicsUpdate(World *world,
 	}
 
 	// :move player bullets
-	for (int playerBulletIndex = 0; playerBulletIndex < world->numPlayerBullets; playerBulletIndex++)
+	for (int playerBulletIndex = 0;
+		 playerBulletIndex < world->numPlayerBullets;
+		 playerBulletIndex++)
 	{
 		Bullet *bullet = &world->playerBullets[playerBulletIndex];
 
@@ -369,7 +499,9 @@ WorldPhysicsUpdate(World *world,
 	}
 
 	// :move enemies
-	for (int enemyIndex = 0; enemyIndex < world->numEnemies; enemyIndex++)
+	for (int enemyIndex = 0;
+		 enemyIndex < world->numEnemies;
+		 enemyIndex++)
 	{
 		Enemy *enemy = &world->enemies[enemyIndex];
 
@@ -404,7 +536,9 @@ WorldPhysicsUpdate(World *world,
 	}
 
 	// :move pickups
-	for (int pickupIndex = 0; pickupIndex < world->numPickups; pickupIndex++)
+	for (int pickupIndex = 0;
+		 pickupIndex < world->numPickups;
+		 pickupIndex++)
 	{
 		Pickup *pickup = &world->pickups[pickupIndex];
 
@@ -417,12 +551,44 @@ WorldPhysicsUpdate(World *world,
 		pickup->vel.y = Min(pickup->vel.y, maxYSpeed);
 	}
 
-	// :player bullet vs enemy collision
-	for (int enemyIndex = 0; enemyIndex < world->numEnemies; enemyIndex++)
+	// :check :collision player vs bullet
+	for (int bulletIndex = 0;
+		 bulletIndex < world->numBullets;
+		 bulletIndex++)
+	{
+		Bullet *bullet = &world->bullets[bulletIndex];
+
+		CharacterInfo *characterInfo = GetCharacterInfo(world->player.characterIndex);
+
+		if (CirclesOverlap(world->player.pos, characterInfo->radius, bullet->pos, bullet->radius))
+		{
+			if (world->player.state == PlayerState_Normal)
+			{
+				if (world->player.iframes <= 0.0f)
+				{
+					world->player.state = PlayerState_Dying;
+					world->player.timer = 0.0f;
+
+					PlatformPlaySound(snd_pichuun);
+				}
+			}
+
+			world->bullets[bulletIndex] = world->bullets[world->numBullets - 1];
+			world->numBullets--;
+			bulletIndex--;
+		}
+	}
+
+	// :check :collision player bullet vs enemy
+	for (int enemyIndex = 0;
+		 enemyIndex < world->numEnemies;
+		 enemyIndex++)
 	{
 		Enemy *enemy = &world->enemies[enemyIndex];
 
-		for (int playerBulletIndex = 0; playerBulletIndex < world->numPlayerBullets; playerBulletIndex++)
+		for (int playerBulletIndex = 0;
+			 playerBulletIndex < world->numPlayerBullets;
+			 playerBulletIndex++)
 		{
 			Bullet *bullet = &world->playerBullets[playerBulletIndex];
 
@@ -465,6 +631,8 @@ RestartStage(World *world)
 	world->numParticles = 0;
 	world->numPickups = 0;
 	world->boss = {};
+
+	RecreatePlayer(&world->player);
 }
 
 static void
@@ -583,10 +751,7 @@ WorldUpdate(World *world,
 			PlatformPlaySound(snd_enemy_die);
 
 			{
-				Pickup *pickup = AllocatePickup(world);
-				pickup->type = PickupType_Point;
-				pickup->pos = enemy->pos;
-				pickup->vel = {0.0f, -2.0f};
+				CreatePickup(world, enemy->pos, PickupType_Point);
 			}
 
 			{
@@ -691,8 +856,6 @@ GameUpdate(Game *game,
 	TIMED_FUNCTION();
 
 	WorldUpdate(&game->world, input);
-
-	game->showDebugRecords ^= input->DEBUG_Key1Pressed;
 }
 
 static void
@@ -754,14 +917,46 @@ DrawPlayer(Renderer *renderer,
 		   RenderBackend *backend,
 		   GameInput *input)
 {
-	DrawSprite(renderer, backend, assets,
-			   player->spriteIndex,
-			   (int)player->frameIndex,
-			   player->pos);
+	{
+		vec4 color = c_white;
+		vec2 scale = {1.0f, 1.0f};
+
+		if (player->state == PlayerState_Dying
+			|| player->state == PlayerState_Appearing)
+		{
+			float t;
+			if (player->state == PlayerState_Dying)
+			{
+				t = player->timer/PLAYER_DEATH_TIME;
+			}
+			else
+			{
+				t = 1.0f - player->timer/PLAYER_APPEAR_TIME;
+			}
+
+			scale.x = Lerp(1.0f, 0.25f, t);
+			scale.y = Lerp(1.0f, 2.0f, t);
+
+			color.a = Lerp(1.0f, 0.0f, t);
+		}
+		else
+		{
+			if (player->iframes > 0.0f)
+			{
+				color.a = 0.5f + 0.5f*Sin01(50.0f*input->time);
+			}
+		}
+
+		DrawSprite(renderer, backend, assets,
+				   player->spriteIndex,
+				   (int)player->frameIndex,
+				   player->pos, scale,
+				   0.0f, color);
+	}
 
 	if (player->hitboxAnim > 0.0f)
 	{
-		vec4 color = {1, 1, 1, 1};
+		vec4 color = c_white;
 		color.a = player->hitboxAnim;
 
 		f32 scale = EaseOutBack(player->hitboxAnim);
@@ -909,7 +1104,7 @@ GameRenderPlayAreaPass(Renderer *renderer,
 {
 	TIMED_FUNCTION();
 
-	backend->Clear(backend, 0, 0, 1, 1);
+	// backend->Clear(backend, 0, 0, 1, 1);
 
 	SetViewportKeepAspect(backend,
 						  PLAY_AREA_X, PLAY_AREA_Y,
@@ -925,7 +1120,7 @@ GameRenderPlayAreaPass(Renderer *renderer,
 	renderer->translationX = PLAY_AREA_W/2;
 	renderer->translationY = 0;
 
-	// :Draw Player Bullets
+	// :draw player bullets
 	{
 		//RendererFlush(&game->renderer, backend);
 		//backend->srcBlendFactor = BlendFactor_One;
@@ -952,10 +1147,10 @@ GameRenderPlayAreaPass(Renderer *renderer,
 		//backend->destBlendFactor = BlendFactor_InvSrcAlpha;
 	}
 
-	// :Draw Player
+	// :draw player
 	DrawPlayer(renderer, &world->player, assets, backend, input);
 
-	// :Draw Enemies
+	// :draw enemies
 	for (int enemyIndex = 0; enemyIndex < world->numEnemies; enemyIndex++)
 	{
 		Enemy *enemy = &world->enemies[enemyIndex];
@@ -966,7 +1161,7 @@ GameRenderPlayAreaPass(Renderer *renderer,
 				   enemy->xscale, 1.0f);
 	}
 
-	// :Draw Bullets
+	// :draw bullets
 	for (int bulletIndex = 0; bulletIndex < world->numBullets; bulletIndex++)
 	{
 		Bullet *bullet = &world->bullets[bulletIndex];
@@ -1043,6 +1238,70 @@ GameRenderPlayAreaPass(Renderer *renderer,
 				   scale.x, scale.y,
 				   angle,
 				   color);
+	}
+
+	if (world->DEBUG_showHitboxes)
+	{
+		DrawRectangle(renderer, backend, assets,
+					  -PLAY_AREA_W/2.0f, 0,
+					  PLAY_AREA_W, PLAY_AREA_H,
+					  {0.0f, 0.0f, 0.0f, 0.5f});
+
+		{
+			CharacterInfo *characterInfo = GetCharacterInfo(world->player.characterIndex);
+
+			DrawCircle(renderer, backend, assets,
+					   world->player.pos, characterInfo->grazeRadius,
+					   {1.0f, 1.0f, 1.0f, 0.25f});
+
+			DrawCircle(renderer, backend, assets,
+					   world->player.pos, characterInfo->radius,
+					   c_white);
+		}
+
+		for (int bulletIndex = 0;
+			 bulletIndex < world->numBullets;
+			 bulletIndex++)
+		{
+			Bullet *bullet = &world->bullets[bulletIndex];
+
+			DrawCircle(renderer, backend, assets,
+					   bullet->pos, bullet->radius,
+					   c_white);
+		}
+
+		for (int enemyIndex = 0;
+			 enemyIndex < world->numEnemies;
+			 enemyIndex++)
+		{
+			Enemy *enemy = &world->enemies[enemyIndex];
+
+			DrawCircle(renderer, backend, assets,
+					   enemy->pos, enemy->radius,
+					   {1.0f, 1.0f, 1.0f, 0.25f});
+		}
+
+		for (int pickupIndex = 0;
+			 pickupIndex < world->numPickups;
+			 pickupIndex++)
+		{
+			Pickup *pickup = &world->pickups[pickupIndex];
+
+			DrawCircle(renderer, backend, assets,
+					   pickup->pos, pickup->radius,
+					   {1.0f, 1.0f, 1.0f, 0.5f});
+		}
+
+		for (int playerBulletIndex = 0;
+			 playerBulletIndex < world->numPlayerBullets;
+			 playerBulletIndex++)
+		{
+			Bullet *bullet = &world->playerBullets[playerBulletIndex];
+
+			DrawCircle(renderer, backend, assets,
+					   bullet->pos, bullet->radius,
+					   {1.0f, 1.0f, 1.0f, 0.25f});
+		}
 	}
 
 	RendererFlush(renderer, backend);
@@ -1146,7 +1405,12 @@ GameRenderDebugPass(Game *game,
 		backend->projection = projection;
 	}
 
+#if 0
 	{
+		//
+		// manually draw black borders
+		//
+
 		Viewport viewport = GetViewportKeepAspect(backend->targetWidth, backend->targetHeight,
 												  GAME_RES_W, GAME_RES_H,
 												  0, 0, GAME_RES_W, GAME_RES_H);
@@ -1173,6 +1437,7 @@ GameRenderDebugPass(Game *game,
 						  c_black);
 		}
 	}
+#endif
 
 	if (game->showDebugRecords)
 	{
@@ -1191,7 +1456,7 @@ GameRender(Game *game,
 {
 	TIMED_FUNCTION();
 
-	backend->Clear(backend, 1, 0, 1, 1);
+	// backend->Clear(backend, 1, 0, 1, 1);
 
 	GameRenderPlayAreaPass(&game->renderer, &game->world, assets, backend, input, memory);
 	GameRenderHUDPass(game, assets, backend, input);
@@ -1237,9 +1502,6 @@ GameInit(Game *game,
 	RendererInit(&game->renderer,
 				 &memory->transientArena,
 				 backend);
-
-	game->world.player.pos = PLAYER_STARTING_POS;
-	game->world.player.spriteIndex = GetCharacterInfo(game->world.player.characterIndex)->sprIdle;
 
 	PlatformPlayMusic("assets_raw/music/dbu_lunate_elf.mp3");
 
@@ -1318,6 +1580,9 @@ GameUpdateAndRender(GameMemory *memory,
 	{
 		GameUpdate(game, input);
 	}
+
+	game->showDebugRecords ^= input->DEBUG_Key1Pressed;
+	game->world.DEBUG_showHitboxes ^= input->DEBUG_KeyHPressed;
 
 	GameRender(game, assets, backend, input, memory);
 }

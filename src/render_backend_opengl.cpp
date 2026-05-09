@@ -121,6 +121,23 @@ void main()
 }
 )";
 
+static char g_circleShaderFrag[] =
+R"(IN vec2 v_texCoord;
+IN vec4 v_color;
+uniform sampler2D u_texture;
+
+void main()
+{
+	vec2 coord = 2.0*v_texCoord - 1.0;
+	if (coord.x*coord.x + coord.y*coord.y >= 1.0)
+	{
+		discard;
+	}
+
+	FRAG_COLOR = TEXTURE(u_texture, v_texCoord) * v_color;
+}
+)";
+
 static const char *
 GetGLSLVersionString(OpenGLContextVersion gl_version)
 {
@@ -246,6 +263,7 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 
 	backend->DrawQuads = OpenGLRenderBackendDrawQuads;
 	backend->DrawTriangles3D = OpenGLRenderBackendDrawTriangles3D;
+	backend->DrawCircles = OpenGLRenderBackendDrawCircles;
 	backend->UploadTextureAsset = OpenGLRenderBackendUploadTextureAsset;
 	backend->Clear = OpenGLRenderBackendClear;
 	backend->SetViewport = OpenGLRenderBackendSetViewport;
@@ -282,9 +300,10 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 		gl->BindBuffer(GL_ARRAY_BUFFER, data->vertexBuffer);
 		gl->BufferData(GL_ARRAY_BUFFER, data->vertexBufferSize, nullptr, GL_DYNAMIC_DRAW);
 
-		data->shaders[ShaderIndex_Normal] = LoadShaderFromStrings(data, g_defaultShaderVert, g_defaultShaderFrag);
+		data->shaders[ShaderIndex_Normal]   = LoadShaderFromStrings(data, g_defaultShaderVert,   g_defaultShaderFrag);
 		data->shaders[ShaderIndex_Normal3D] = LoadShaderFromStrings(data, g_defaultShaderVert3D, g_defaultShaderFrag);
-		data->shaders[ShaderIndex_Fog3D] = LoadShaderFromStrings(data, g_fogShaderVert3D, g_fogShaderFrag3D);
+		data->shaders[ShaderIndex_Fog3D]    = LoadShaderFromStrings(data, g_fogShaderVert3D,     g_fogShaderFrag3D);
+		data->shaders[ShaderIndex_Circle]   = LoadShaderFromStrings(data, g_defaultShaderVert,   g_circleShaderFrag);
 
 		gl->GenTextures(1, &data->mainFrameBufferTexture);
 		gl->BindTexture(GL_TEXTURE_2D, data->mainFrameBufferTexture);
@@ -509,6 +528,18 @@ RENDER_BACKEND_DRAW_TRIANGLES_3D(OpenGLRenderBackendDrawTriangles3D)
 	u32 textureID = (u32)(usize)texture->handle;
 
 	OpenGLRenderBackendDrawPrimitives(backend, GL_TRIANGLES, textureID, vertices, num_vertices);
+}
+
+RENDER_BACKEND_DRAW_CIRCLES(OpenGLRenderBackendDrawCircles)
+{
+	u32 textureID = (u32)(usize)texture->handle;
+
+	ShaderIndex saveShaderIndex = backend->shaderIndex;
+	backend->shaderIndex = ShaderIndex_Circle;
+
+	OpenGLRenderBackendDrawPrimitives(backend, GL_QUADS, textureID, vertices, num_vertices);
+
+	backend->shaderIndex = saveShaderIndex;
 }
 
 RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(OpenGLRenderBackendUploadTextureAsset)
