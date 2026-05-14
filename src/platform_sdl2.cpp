@@ -850,6 +850,9 @@ PlatformSDL2Main()
 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
 		// SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 0);
 
+		// SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		// SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+
 		state.window_create_flags |= SDL_WINDOW_OPENGL;
 	}
 

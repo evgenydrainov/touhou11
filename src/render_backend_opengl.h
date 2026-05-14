@@ -24,6 +24,8 @@ struct RenderBackendOpenGLData
 	int mainFrameBufferWidth;
 	int mainFrameBufferHeight;
 
+	bool renderToMainFramebuffer;
+
 	u32 shaders[ShaderIndex_COUNT];
 
 	OpenGLFunctions *gl;

@@ -21,10 +21,10 @@ R"(#ifdef GL_ES
 	#define FRAG_COLOR gl_FragColor
 	#define TEXTURE texture2D
 #else
-	out vec4 out_fragcolor;
+	out vec4 out_fragColor;
 	#define IN in
 	#define TEXTURE texture
-	#define FRAG_COLOR out_fragcolor
+	#define FRAG_COLOR out_fragColor
 #endif
 )";
 
@@ -260,6 +260,7 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 	data->gl_version = gl_version;
 	data->mainFrameBufferWidth = mainFrameBufferWidth;
 	data->mainFrameBufferHeight = mainFrameBufferHeight;
+	data->renderToMainFramebuffer = true;
 
 	backend->DrawQuads = OpenGLRenderBackendDrawQuads;
 	backend->DrawTriangles3D = OpenGLRenderBackendDrawTriangles3D;
@@ -305,19 +306,22 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 		data->shaders[ShaderIndex_Fog3D]    = LoadShaderFromStrings(data, g_fogShaderVert3D,     g_fogShaderFrag3D);
 		data->shaders[ShaderIndex_Circle]   = LoadShaderFromStrings(data, g_defaultShaderVert,   g_circleShaderFrag);
 
-		gl->GenTextures(1, &data->mainFrameBufferTexture);
-		gl->BindTexture(GL_TEXTURE_2D, data->mainFrameBufferTexture);
+		if (data->renderToMainFramebuffer)
+		{
+			gl->GenTextures(1, &data->mainFrameBufferTexture);
+			gl->BindTexture(GL_TEXTURE_2D, data->mainFrameBufferTexture);
 
-		gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-		gl->TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mainFrameBufferWidth, mainFrameBufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			gl->TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mainFrameBufferWidth, mainFrameBufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-		gl->GenFramebuffers(1, &data->mainFrameBuffer);
-		gl->BindFramebuffer(GL_FRAMEBUFFER, data->mainFrameBuffer);
-		gl->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data->mainFrameBufferTexture, 0);
+			gl->GenFramebuffers(1, &data->mainFrameBuffer);
+			gl->BindFramebuffer(GL_FRAMEBUFFER, data->mainFrameBuffer);
+			gl->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data->mainFrameBufferTexture, 0);
+		}
 	}
 
 	arena->pos = arenaSavePos;
@@ -621,13 +625,23 @@ OpenGLRenderBackendPrepareDraw(RenderBackend *backend)
 	RenderBackendOpenGLData *data = (RenderBackendOpenGLData *)backend->userdata;
 	OpenGLFunctions *gl = data->gl;
 
-	gl->BindFramebuffer(GL_FRAMEBUFFER, data->mainFrameBuffer);
-
-	backend->targetWidth = data->mainFrameBufferWidth;
-	backend->targetHeight = data->mainFrameBufferHeight;
-
 	backend->numDrawCalls = backend->currNumDrawCalls;
 	backend->currNumDrawCalls = 0;
+
+	if (data->renderToMainFramebuffer)
+	{
+		gl->BindFramebuffer(GL_FRAMEBUFFER, data->mainFrameBuffer);
+
+		backend->targetWidth = data->mainFrameBufferWidth;
+		backend->targetHeight = data->mainFrameBufferHeight;
+	}
+	else
+	{
+		gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		backend->targetWidth = backend->windowWidth;
+		backend->targetHeight = backend->windowHeight;
+	}
 
 	return true;
 }
@@ -640,46 +654,49 @@ OpenGLRenderBackendPresent(RenderBackend *backend)
 	RenderBackendOpenGLData *data = (RenderBackendOpenGLData *)backend->userdata;
 	OpenGLFunctions *gl = data->gl;
 
-	backend->projection = Matrix4Ortho(0.0f, (f32)backend->windowWidth, (f32)backend->windowHeight, 0.0f);
-
-	Viewport viewport = GetViewportKeepAspect(backend->windowWidth, backend->windowHeight,
-											  data->mainFrameBufferWidth, data->mainFrameBufferHeight,
-											  0, 0, data->mainFrameBufferWidth, data->mainFrameBufferHeight);
-
-	f32 x1 = (f32)viewport.x;
-	f32 y1 = (f32)viewport.y;
-
-	f32 x2 = (f32)(viewport.x + viewport.width);
-	f32 y2 = (f32)(viewport.y + viewport.height);
-
-	RenderVertex2D vertices[] = {
-		{x1, y1, 0.0f, 1.0f, 0xffffffff},
-		{x2, y1, 1.0f, 1.0f, 0xffffffff},
-		{x2, y2, 1.0f, 0.0f, 0xffffffff},
-		{x1, y2, 0.0f, 0.0f, 0xffffffff},
-	};
-
-	gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
-	gl->Viewport(0, 0, backend->windowWidth, backend->windowHeight);
-
-	gl->ClearColor(0, 0, 0, 1);
-	gl->Clear(GL_COLOR_BUFFER_BIT);
-
+	if (data->renderToMainFramebuffer)
 	{
-		bool enableBlending = backend->enableBlending;
-		RenderFilter minFilter = backend->minFilter;
-		RenderFilter magFilter = backend->magFilter;
+		backend->projection = Matrix4Ortho(0.0f, (f32)backend->windowWidth, (f32)backend->windowHeight, 0.0f);
 
-		backend->enableBlending = false;
-		backend->minFilter = RenderFilter_Linear;
-		backend->magFilter = RenderFilter_Linear;
+		Viewport viewport = GetViewportKeepAspect(backend->windowWidth, backend->windowHeight,
+												  data->mainFrameBufferWidth, data->mainFrameBufferHeight,
+												  0, 0, data->mainFrameBufferWidth, data->mainFrameBufferHeight);
 
-		OpenGLRenderBackendDrawPrimitives(backend, GL_QUADS,
-										  data->mainFrameBufferTexture,
-										  vertices, ArrayLength(vertices));
+		f32 x1 = (f32)viewport.x;
+		f32 y1 = (f32)viewport.y;
 
-		backend->enableBlending = enableBlending;
-		backend->minFilter = minFilter;
-		backend->magFilter = magFilter;
+		f32 x2 = (f32)(viewport.x + viewport.width);
+		f32 y2 = (f32)(viewport.y + viewport.height);
+
+		RenderVertex2D vertices[] = {
+			{x1, y1, 0.0f, 1.0f, 0xffffffff},
+			{x2, y1, 1.0f, 1.0f, 0xffffffff},
+			{x2, y2, 1.0f, 0.0f, 0xffffffff},
+			{x1, y2, 0.0f, 0.0f, 0xffffffff},
+		};
+
+		gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
+		gl->Viewport(0, 0, backend->windowWidth, backend->windowHeight);
+
+		gl->ClearColor(0, 0, 0, 1);
+		gl->Clear(GL_COLOR_BUFFER_BIT);
+
+		{
+			bool enableBlending = backend->enableBlending;
+			RenderFilter minFilter = backend->minFilter;
+			RenderFilter magFilter = backend->magFilter;
+
+			backend->enableBlending = false;
+			backend->minFilter = RenderFilter_Linear;
+			backend->magFilter = RenderFilter_Linear;
+
+			OpenGLRenderBackendDrawPrimitives(backend, GL_QUADS,
+											  data->mainFrameBufferTexture,
+											  vertices, ArrayLength(vertices));
+
+			backend->enableBlending = enableBlending;
+			backend->minFilter = minFilter;
+			backend->magFilter = magFilter;
+		}
 	}
 }
