@@ -6,30 +6,44 @@
 // https://haqr.eu/tinyrenderer
 //
 
-void SoftwareRenderBackendInit(RenderBackend *backend)
+void
+SoftwareRenderBackendInit(RenderBackend *backend)
 {
 	backend->DrawQuads = SoftwareRenderBackendDrawQuads;
+	backend->DrawTriangles3D = SoftwareRenderBackendDrawTriangles3D;
+	backend->DrawCircles = SoftwareRenderBackendDrawCircles;
 	backend->UploadTextureAsset = SoftwareRenderBackendUploadTextureAsset;
 	backend->Clear = SoftwareRenderBackendClear;
 	backend->SetViewport = SoftwareRenderBackendSetViewport;
+	backend->SetUniform = SoftwareRenderBackendSetUniform;
 	backend->OnFullscreenChanged = SoftwareRenderBackendOnFullscreenChanged;
 }
 
-static void SoftwareRenderBackendDrawLine(RenderBackendSoftwareData *backend,
-										  f32 float_x1, f32 float_y1,
-										  f32 float_x2, f32 float_y2)
+static void
+SoftwareRenderBackendDrawLine(RenderBackendSoftwareData *data,
+							  RenderVertex2D vertex1,
+							  RenderVertex2D vertex2)
 {
-	float_x1 *= backend->scale_x;
-	float_y1 *= backend->scale_y;
+	vertex1.x *= data->scale_x;
+	vertex1.y *= data->scale_y;
 
-	float_x2 *= backend->scale_x;
-	float_y2 *= backend->scale_y;
+	vertex2.x *= data->scale_x;
+	vertex2.y *= data->scale_y;
 
-	i32 x1 = (i32)float_x1;
-	i32 y1 = (i32)float_y1;
+	vertex1.x = data->viewport.x + (vertex1.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex1.y = data->viewport.y + (vertex1.y + 1.0f) * 0.5f * data->viewport.height;
 
-	i32 x2 = (i32)float_x2;
-	i32 y2 = (i32)float_y2;
+	vertex2.x = data->viewport.x + (vertex2.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex2.y = data->viewport.y + (vertex2.y + 1.0f) * 0.5f * data->viewport.height;
+
+	vertex1.y = data->backbuffer_height - vertex1.y;
+	vertex2.y = data->backbuffer_height - vertex2.y;
+
+	i32 x1 = (i32)vertex1.x;
+	i32 y1 = (i32)vertex1.y;
+
+	i32 x2 = (i32)vertex2.x;
+	i32 y2 = (i32)vertex2.y;
 
 	bool is_steep = Abs(x1 - x2) < Abs(y1 - y2);
 	if (is_steep)
@@ -62,18 +76,19 @@ static void SoftwareRenderBackendDrawLine(RenderBackendSoftwareData *backend,
 			draw_y = y;
 		}
 
-		if (draw_x >= 0 && draw_x < backend->backbuffer_width
-			&& draw_y >= 0 && draw_y < backend->backbuffer_height)
+		if (draw_x >= 0 && draw_x < data->backbuffer_width
+			&& draw_y >= 0 && draw_y < data->backbuffer_height)
 		{
-			u32 *pixel = (u32*)((u8*)backend->backbuffer
-								+ draw_y*backend->backbuffer_pitch
+			u32 *pixel = (u32*)((u8*)data->backbuffer
+								+ draw_y*data->backbuffer_pitch
 								+ draw_x*4);
-			*pixel = 0;
+			*pixel = 0xffffffff;
 		}
 	}
 }
 
-static f64 SignedTriangleArea(f64 x1, f64 y1, f64 x2, f64 y2, f64 x3, f64 y3)
+static f64
+SignedTriangleArea(f64 x1, f64 y1, f64 x2, f64 y2, f64 x3, f64 y3)
 {
 	f64 result = 0.5*((y2-y1)*(x2+x1) + (y3-y2)*(x3+x2) + (y1-y3)*(x1+x3));
 	return result;
@@ -86,9 +101,10 @@ static f64 SignedTriangleArea(f64 x1, f64 y1, f64 x2, f64 y2, f64 x3, f64 y3)
 //	u32 pixels[];
 //};
 
-static u32 SampleTexture(u32 *texture_pixels,
-						 int texture_width, int texture_height,
-						 f32 u, f32 v)
+static u32
+SampleTexture(u32 *texture_pixels,
+			  int texture_width, int texture_height,
+			  f32 u, f32 v)
 {
 	u = Clamp(u, 0.0f, 1.0f);
 	v = Clamp(v, 0.0f, 1.0f);
@@ -100,20 +116,34 @@ static u32 SampleTexture(u32 *texture_pixels,
 	return result;
 }
 
-static void SoftwareRenderBackendDrawTriangle(RenderBackendSoftwareData *backend,
-											  TextureAsset *texture,
-											  RenderVertex2D vertex1,
-											  RenderVertex2D vertex2,
-											  RenderVertex2D vertex3)
+static void
+SoftwareRenderBackendDrawTriangle(RenderBackendSoftwareData *data,
+								  TextureAsset *texture,
+								  RenderVertex2D vertex1,
+								  RenderVertex2D vertex2,
+								  RenderVertex2D vertex3)
 {
-	vertex1.x *= backend->scale_x;
-	vertex1.y *= backend->scale_y;
+	vertex1.x *= data->scale_x;
+	vertex1.y *= data->scale_y;
 
-	vertex2.x *= backend->scale_x;
-	vertex2.y *= backend->scale_y;
+	vertex2.x *= data->scale_x;
+	vertex2.y *= data->scale_y;
 
-	vertex3.x *= backend->scale_x;
-	vertex3.y *= backend->scale_y;
+	vertex3.x *= data->scale_x;
+	vertex3.y *= data->scale_y;
+
+	vertex1.x = data->viewport.x + (vertex1.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex1.y = data->viewport.y + (vertex1.y + 1.0f) * 0.5f * data->viewport.height;
+
+	vertex2.x = data->viewport.x + (vertex2.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex2.y = data->viewport.y + (vertex2.y + 1.0f) * 0.5f * data->viewport.height;
+
+	vertex3.x = data->viewport.x + (vertex3.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex3.y = data->viewport.y + (vertex3.y + 1.0f) * 0.5f * data->viewport.height;
+
+	vertex1.y = data->backbuffer_height - vertex1.y;
+	vertex2.y = data->backbuffer_height - vertex2.y;
+	vertex3.y = data->backbuffer_height - vertex3.y;
 
 	i32 x1 = RoundFloat32ToInt32(vertex1.x);
 	i32 y1 = RoundFloat32ToInt32(vertex1.y);
@@ -133,15 +163,15 @@ static void SoftwareRenderBackendDrawTriangle(RenderBackendSoftwareData *backend
 	bbminx = Max(bbminx, 0);
 	bbminy = Max(bbminy, 0);
 
-	bbmaxx = Min(bbmaxx, backend->backbuffer_width-1);
-	bbmaxy = Min(bbmaxy, backend->backbuffer_height-1);
+	bbmaxx = Min(bbmaxx, data->backbuffer_width-1);
+	bbmaxy = Min(bbmaxy, data->backbuffer_height-1);
 
 	u32 *texturePixels = (u32 *)texture->pixels;
 	int textureWidth = texture->width;
 	int textureHeight = texture->height;
 
-	u8 *pDestRow = ((u8 *)backend->backbuffer
-					+ bbminy*backend->backbuffer_pitch
+	u8 *pDestRow = ((u8 *)data->backbuffer
+					+ bbminy*data->backbuffer_pitch
 					+ bbminx*4);
 
 	for (i32 y = bbminy; y <= bbmaxy; y++)
@@ -185,7 +215,7 @@ static void SoftwareRenderBackendDrawTriangle(RenderBackendSoftwareData *backend
 			pDestColor++;
 		}
 
-		pDestRow += backend->backbuffer_pitch;
+		pDestRow += data->backbuffer_pitch;
 	}
 }
 
@@ -197,38 +227,58 @@ RENDER_BACKEND_DRAW_QUADS(SoftwareRenderBackendDrawQuads)
 
 	for (int vertex_index = 0; vertex_index < num_vertices; vertex_index += 4)
 	{
-#if 1
+		RenderVertex2D vertex0 = vertices[vertex_index+0];
+		RenderVertex2D vertex1 = vertices[vertex_index+1];
+		RenderVertex2D vertex2 = vertices[vertex_index+2];
+		RenderVertex2D vertex3 = vertices[vertex_index+3];
+
+		vertex0.pos = (backend->projection * V4(vertex0.x, vertex0.y, 0.0f, 1.0f)).xy;
+		vertex1.pos = (backend->projection * V4(vertex1.x, vertex1.y, 0.0f, 1.0f)).xy;
+		vertex2.pos = (backend->projection * V4(vertex2.x, vertex2.y, 0.0f, 1.0f)).xy;
+		vertex3.pos = (backend->projection * V4(vertex3.x, vertex3.y, 0.0f, 1.0f)).xy;
+
+#if 0
 		SoftwareRenderBackendDrawTriangle(data,
 										  texture,
-										  vertices[vertex_index+0],
-										  vertices[vertex_index+1],
-										  vertices[vertex_index+2]);
+										  vertex0,
+										  vertex1,
+										  vertex2);
 
 		SoftwareRenderBackendDrawTriangle(data,
 										  texture,
-										  vertices[vertex_index+2],
-										  vertices[vertex_index+3],
-										  vertices[vertex_index+0]);
+										  vertex2,
+										  vertex3,
+										  vertex0);
 #else
 		SoftwareRenderBackendDrawLine(data,
-									  vertices[vertex_index].x, vertices[vertex_index].y,
-									  vertices[vertex_index+1].x, vertices[vertex_index+1].y);
+									  vertex0,
+									  vertex1);
 
 		SoftwareRenderBackendDrawLine(data,
-									  vertices[vertex_index+1].x, vertices[vertex_index+1].y,
-									  vertices[vertex_index+2].x, vertices[vertex_index+2].y);
+									  vertex1,
+									  vertex2);
 
 		SoftwareRenderBackendDrawLine(data,
-									  vertices[vertex_index+2].x, vertices[vertex_index+2].y,
-									  vertices[vertex_index+3].x, vertices[vertex_index+3].y);
+									  vertex2,
+									  vertex3);
 
 		SoftwareRenderBackendDrawLine(data,
-									  vertices[vertex_index+3].x, vertices[vertex_index+3].y,
-									  vertices[vertex_index].x, vertices[vertex_index].y);
+									  vertex3,
+									  vertex0);
 #endif
 	}
 
 	// LogInfo("DrawQuads: %d quads", num_vertices/4);
+}
+
+RENDER_BACKEND_DRAW_TRIANGLES_3D(SoftwareRenderBackendDrawTriangles3D)
+{
+
+}
+
+RENDER_BACKEND_DRAW_CIRCLES(SoftwareRenderBackendDrawCircles)
+{
+
 }
 
 RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(SoftwareRenderBackendUploadTextureAsset)
@@ -247,7 +297,8 @@ RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(SoftwareRenderBackendUploadTextureAsset)
 	return true;
 }
 
-static u32 PackColorU32(float r, float g, float b, float a)
+static u32
+PackColorU32(f32 r, f32 g, f32 b, f32 a)
 {
 	u32 result = (((u32)(255.0f*r) << 24)
 				  | ((u32)(255.0f*g) << 16)
@@ -260,7 +311,7 @@ RENDER_BACKEND_CLEAR(SoftwareRenderBackendClear)
 {
 	RenderBackendSoftwareData *data = (RenderBackendSoftwareData *)backend->userdata;
 
-	u32 color = PackColorU32(r, g, b, a);
+	u32 color = PackColorU32(a, b, g, r);
 
 	u8 *pDestRow = (u8 *)data->backbuffer;
 	for (int y = 0; y < data->backbuffer_height; y++)
@@ -277,8 +328,27 @@ RENDER_BACKEND_CLEAR(SoftwareRenderBackendClear)
 
 RENDER_BACKEND_SET_VIEWPORT(SoftwareRenderBackendSetViewport)
 {
+	RenderBackendSoftwareData *data = (RenderBackendSoftwareData *)backend->userdata;
+
+	data->viewport = {x, y, width, height};
+}
+
+RENDER_BACKEND_SET_UNIFORM(SoftwareRenderBackendSetUniform)
+{
 }
 
 RENDER_BACKEND_ON_FULLSCREEN_CHANGED(SoftwareRenderBackendOnFullscreenChanged)
 {
+}
+
+bool
+SoftwareRenderBackendPrepareDraw(RenderBackend *backend)
+{
+	RenderBackendSoftwareData *data = (RenderBackendSoftwareData *)backend->userdata;
+
+	backend->targetWidth = data->backbuffer_width;
+	backend->targetHeight = data->backbuffer_height;
+
+	bool result = true;
+	return result;
 }

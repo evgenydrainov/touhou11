@@ -8,10 +8,19 @@ struct RenderBackend;
 
 struct RenderVertex2D
 {
-	f32 x;
-	f32 y;
+	union
+	{
+		struct
+		{
+			f32 x;
+			f32 y;
+		};
+		vec2 pos;
+	};
+
 	f32 u;
 	f32 v;
+
 	u32 color;
 };
 

@@ -102,9 +102,9 @@ PlatformLoadAssetFile(const char *assetFilePath,
 			result = fileData;
 			*outFileSize = fileSize;
 		}
-	}
 
-	SDL_RWclose(rw);
+		SDL_RWclose(rw);
+	}
 
 	return result;
 }
@@ -524,7 +524,7 @@ RenderBackendPrepareDraw(SDL2PlatformState *state)
 				state->render_backend_software.scale_y = window_surface->h/(float)GAME_RES_H;
 			}
 
-			success = true;
+			success = SoftwareRenderBackendPrepareDraw(&state->render_backend);
 		} break;
 
 		case RenderBackendType_D3D9:

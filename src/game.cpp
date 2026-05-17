@@ -864,38 +864,40 @@ RenderDebugRecords(Renderer *renderer,
 				   GameAssets *assets,
 				   GameInput *input)
 {
-	f32 drawY = 0.0f;
-
 #if ENABLE_DEBUG_PROFILER
-	for (int recordIndex = 0; recordIndex < g_profiler.numPrevRecords; recordIndex++)
 	{
-		DebugTimeRecord *record = &g_profiler.prevRecords[recordIndex];
+		f32 drawY = 0.0f;
 
-		char buf[128];
-		if (record->hitCount == 1)
+		for (int recordIndex = 0; recordIndex < g_profiler.numPrevRecords; recordIndex++)
 		{
-			stbsp_snprintf(buf, sizeof(buf), "%s: %fms",
-						   record->functionName,
-						   1000.0*(record->cycleCount/input->DEBUG_perfFreqF64));
+			DebugTimeRecord *record = &g_profiler.prevRecords[recordIndex];
+
+			char buf[128];
+			if (record->hitCount == 1)
+			{
+				stbsp_snprintf(buf, sizeof(buf), "%s: %fms",
+							   record->functionName,
+							   1000.0*(record->cycleCount/input->DEBUG_perfFreqF64));
+			}
+			else
+			{
+				stbsp_snprintf(buf, sizeof(buf), "%s[%d]: %fms",
+							   record->functionName,
+							   record->hitCount,
+							   1000.0*(record->cycleCount/input->DEBUG_perfFreqF64));
+			}
+
+			f32 drawX = 20.0f*record->callDepth;
+
+			DrawTextShadow(renderer, backend, assets,
+						   fnt_consolas, drawX, drawY, buf);
+
+			drawY += 25;
 		}
-		else
-		{
-			stbsp_snprintf(buf, sizeof(buf), "%s[%d]: %fms",
-						   record->functionName,
-						   record->hitCount,
-						   1000.0*(record->cycleCount/input->DEBUG_perfFreqF64));
-		}
-
-		f32 drawX = 20.0f*record->callDepth;
-
-		DrawTextShadow(renderer, backend, assets,
-					   fnt_consolas, drawX, drawY, buf);
-
-		drawY += 25;
 	}
 #else
 	DrawText(renderer, backend, assets,
-			 fnt_consolas, drawX, drawY, "Debug profiling is disabled");
+			 fnt_consolas, 0.0f, 0.0f, "Debug profiling is disabled");
 #endif
 }
 
@@ -1456,7 +1458,8 @@ GameRender(Game *game,
 {
 	TIMED_FUNCTION();
 
-	// backend->Clear(backend, 1, 0, 1, 1);
+	// TODO: disable this
+	backend->Clear(backend, 0, 0, 0, 1);
 
 	GameRenderPlayAreaPass(&game->renderer, &game->world, assets, backend, input, memory);
 	GameRenderHUDPass(game, assets, backend, input);
