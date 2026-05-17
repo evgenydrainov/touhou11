@@ -249,8 +249,7 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 	backend->UploadTextureAsset = OpenGLRenderBackendUploadTextureAsset;
 	backend->Clear = OpenGLRenderBackendClear;
 	backend->SetViewport = OpenGLRenderBackendSetViewport;
-	backend->SetUniformVec4 = OpenGLRenderBackendSetUniformVec4;
-	backend->SetUniformF32 = OpenGLRenderBackendSetUniformF32;
+	backend->SetUniform = OpenGLRenderBackendSetUniform;
 	backend->OnFullscreenChanged = OpenGLRenderBackendOnFullscreenChanged;
 
 	data->numQuadIndices = 6*maxNumQuads;
@@ -553,7 +552,7 @@ RENDER_BACKEND_SET_VIEWPORT(OpenGLRenderBackendSetViewport)
 	gl->Viewport(x, backend->targetHeight - height - y, width, height);
 }
 
-RENDER_BACKEND_SET_UNIFORM_VEC4(OpenGLRenderBackendSetUniformVec4)
+RENDER_BACKEND_SET_UNIFORM(OpenGLRenderBackendSetUniform)
 {
 	RenderBackendOpenGLData *data = (RenderBackendOpenGLData *)backend->userdata;
 	OpenGLFunctions *gl = data->gl;
@@ -562,20 +561,19 @@ RENDER_BACKEND_SET_UNIFORM_VEC4(OpenGLRenderBackendSetUniformVec4)
 	if (location != -1)
 	{
 		gl->UseProgram(data->shaders[backend->shaderIndex]);
-		gl->Uniform4fv(location, 1, &value.e[0]);
-	}
-}
 
-RENDER_BACKEND_SET_UNIFORM_F32(OpenGLRenderBackendSetUniformF32)
-{
-	RenderBackendOpenGLData *data = (RenderBackendOpenGLData *)backend->userdata;
-	OpenGLFunctions *gl = data->gl;
+		switch (type)
+		{
+			case ShaderUniformType_F32:
+			{
+				gl->Uniform1fv(location, 1, (f32 *)value);
+			} break;
 
-	int location = gl->GetUniformLocation(data->shaders[backend->shaderIndex], name);
-	if (location != -1)
-	{
-		gl->UseProgram(data->shaders[backend->shaderIndex]);
-		gl->Uniform1fv(location, 1, &value);
+			case ShaderUniformType_Vec4:
+			{
+				gl->Uniform4fv(location, 1, (f32 *)value);
+			} break;
+		}
 	}
 }
 

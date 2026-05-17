@@ -856,9 +856,9 @@ DrawStage3DBackground(StageBG *bg,
 		f32 fogNear = 0.0f;
 		f32 fogFar = 8.0f;
 
-		backend->SetUniformVec4(backend, "u_fogColor", fogColor);
-		backend->SetUniformF32(backend, "u_fogNear", fogNear);
-		backend->SetUniformF32(backend, "u_fogFar", fogFar);
+		backend->SetUniform(backend, "u_fogColor", ShaderUniformType_Vec4, &fogColor);
+		backend->SetUniform(backend, "u_fogNear",  ShaderUniformType_F32,  &fogNear);
+		backend->SetUniform(backend, "u_fogFar",   ShaderUniformType_F32,  &fogFar);
 	}
 
 	DrawLayer(tex_gfw_misty_lake, bg->layer1Offset, c_white);
