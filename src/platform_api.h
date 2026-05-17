@@ -46,6 +46,7 @@ struct GameInput
 	bool DEBUG_KeyD;
 
 	bool DEBUG_KeyRPressed;
+	bool DEBUG_KeyHPressed;
 	bool DEBUG_Key1Pressed;
 
 	bool DEBUG_skipThisFrame;
@@ -94,6 +95,7 @@ enum SoundIndex : u32
 	snd_reimu_shoot,
 	snd_enemy_hurt,
 	snd_enemy_die,
+	snd_pichuun,
 
 	SoundIndex_COUNT,
 };

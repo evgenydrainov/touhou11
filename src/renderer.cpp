@@ -19,10 +19,27 @@ RendererFlush(Renderer *renderer,
 		return;
 	}
 
-	backend->DrawQuads(backend, renderer->texture, renderer->vertices, renderer->num_vertices);
+	switch (renderer->primitiveType)
+	{
+		case RendererPrimitiveType_None:
+		{
+			Assert(false);
+		} break;
+		
+		case RendererPrimitiveType_Quads:
+		{
+			backend->DrawQuads(backend, renderer->texture, renderer->vertices, renderer->num_vertices);
+		} break;
+
+		case RendererPrimitiveType_Circles:
+		{
+			backend->DrawCircles(backend, renderer->texture, renderer->vertices, renderer->num_vertices);
+		} break;
+	}
 
 	renderer->num_vertices = 0;
 	renderer->texture = nullptr;
+	renderer->primitiveType = RendererPrimitiveType_None;
 }
 
 void
@@ -52,10 +69,12 @@ DrawQuad(Renderer *renderer,
 	y3 += renderer->translationY;
 
 	if (renderer->num_vertices + 4 > RENDERER_MAX_BATCH_VERTICES
-		|| texture != renderer->texture)
+		|| texture != renderer->texture
+		|| renderer->primitiveType != RendererPrimitiveType_Quads)
 	{
 		RendererFlush(renderer, backend);
 		renderer->texture = texture;
+		renderer->primitiveType = RendererPrimitiveType_Quads;
 	}
 
 	u32 colorU32 = ColorVec4ToU32(color);
@@ -201,7 +220,7 @@ DrawSprite(Renderer *renderer,
 {
 	SpriteInfo *info = GetSpriteInfo(sprite_index);
 	SpriteFrame frame = GetSpriteFrame(info, frame_index);
-	TextureAsset *texture = AssetGetTexture(assets, info->texture_index);
+	TextureAsset *texture = AssetGetTexture(assets, info->textureIndex);
 
 	DrawSpriteFrame(renderer, backend,
 					info->xorigin, info->yorigin,
@@ -223,7 +242,7 @@ DrawSprite(Renderer *renderer,
 {
 	SpriteInfo *info = GetSpriteInfo(sprite_index);
 	SpriteFrame frame = GetSpriteFrame(info, frame_index);
-	TextureAsset *texture = AssetGetTexture(assets, info->texture_index);
+	TextureAsset *texture = AssetGetTexture(assets, info->textureIndex);
 
 	DrawSpriteFrame(renderer, backend,
 					info->xorigin, info->yorigin,
@@ -245,7 +264,7 @@ DrawText(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
 		 vec4 color)
 {
 	FontInfo *info = GetFontInfo(font_index);
-	TextureAsset *texture = AssetGetTexture(assets, info->texture_index);
+	TextureAsset *texture = AssetGetTexture(assets, info->textureIndex);
 
 	float x = pos_x;
 	float y = pos_y;
@@ -278,7 +297,7 @@ DrawText(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
 		if (ch == '\n')
 		{
 			x = pos_x;
-			y += info->line_height * yscale;
+			y += info->lineHeight * yscale;
 
 			if (halign == HAlign_Center)
 			{
@@ -350,7 +369,7 @@ GetTextSize(Renderer *renderer,
 			}
 
 			x = 0;
-			y += yscale*info->line_height;
+			y += yscale*info->lineHeight;
 
 			height = Max(height, y + yscale*info->height);
 		}
@@ -395,12 +414,13 @@ DrawRectangle(Renderer *renderer,
 			 color);
 }
 
-void DrawTexture(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
-				 TextureIndex textureIndex,
-				 f32 destX, f32 destY,
-				 f32 destW, f32 destH,
-				 int sourceX, int sourceY,
-				 int sourceW, int sourceH)
+void
+DrawTexture(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
+			TextureIndex textureIndex,
+			f32 destX, f32 destY,
+			f32 destW, f32 destH,
+			int sourceX, int sourceY,
+			int sourceW, int sourceH)
 {
 	TextureAsset *texture = AssetGetTexture(assets, textureIndex);
 
@@ -430,4 +450,58 @@ void DrawTexture(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
 			 u0, v0,
 			 u1, v1,
 			 {1, 1, 1, 1});
+}
+
+void
+DrawCircle(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
+		   vec2 pos, f32 radius,
+		   vec4 color)
+{
+	TextureAsset *texture = AssetGetTexture(assets, tex_white);
+
+	f32 x0 = pos.x - radius;
+	f32 y0 = pos.y - radius;
+
+	f32 x1 = pos.x + radius;
+	f32 y1 = pos.y - radius;
+
+	f32 x2 = pos.x + radius;
+	f32 y2 = pos.y + radius;
+
+	f32 x3 = pos.x - radius;
+	f32 y3 = pos.y + radius;
+
+	f32 u0 = 0.0f;
+	f32 v0 = 0.0f;
+
+	f32 u1 = 1.0f;
+	f32 v1 = 1.0f;
+
+	x0 += renderer->translationX;
+	y0 += renderer->translationY;
+
+	x1 += renderer->translationX;
+	y1 += renderer->translationY;
+
+	x2 += renderer->translationX;
+	y2 += renderer->translationY;
+
+	x3 += renderer->translationX;
+	y3 += renderer->translationY;
+
+	if (renderer->num_vertices + 4 > RENDERER_MAX_BATCH_VERTICES
+		|| texture != renderer->texture
+		|| renderer->primitiveType != RendererPrimitiveType_Circles)
+	{
+		RendererFlush(renderer, backend);
+		renderer->texture = texture;
+		renderer->primitiveType = RendererPrimitiveType_Circles;
+	}
+
+	u32 colorU32 = ColorVec4ToU32(color);
+
+	renderer->vertices[renderer->num_vertices++] = {x0, y0, u0, v0, colorU32};
+	renderer->vertices[renderer->num_vertices++] = {x1, y1, u1, v0, colorU32};
+	renderer->vertices[renderer->num_vertices++] = {x2, y2, u1, v1, colorU32};
+	renderer->vertices[renderer->num_vertices++] = {x3, y3, u0, v1, colorU32};
 }

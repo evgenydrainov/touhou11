@@ -11,7 +11,11 @@
 #define PLAY_AREA_W (384)
 #define PLAY_AREA_H (448)
 
-#define PLAYER_STARTING_POS (vec2{0.0f, 384.0f})
+#define PLAYER_STARTING_POS			(vec2{0.0f, 384.0f})
+#define PLAYER_DEATH_TIME			(15.0f)
+#define PLAYER_RESPAWN_IFRAMES		(120.0f)
+#define PLAYER_BOMB_COOLDOWN_TIME	(2.5f*60.0f)
+#define PLAYER_APPEAR_TIME			(30.0f)
 
 #define MAX_NUM_BULLETS (1'000)
 #define MAX_NUM_PLAYER_BULLETS (1'000)
@@ -33,7 +37,7 @@ struct CharacterInfo
 	f32 deathbombTime;
 	i32 startingBombs;
 	void (*ShotType)(Player *player, World *world, GameInput *input);
-	void (*Bomb)(Player *player);
+	void (*Bomb)(Player *player, World *world);
 	SpriteIndex sprIdle;
 	SpriteIndex sprMoveLeft;
 	SpriteIndex sprMoveRight;
@@ -47,6 +51,13 @@ enum CharacterIndex : u32
 	CharacterIndex_COUNT,
 };
 
+enum PlayerState : u32
+{
+	PlayerState_Normal,
+	PlayerState_Dying,
+	PlayerState_Appearing,
+};
+
 struct Player
 {
 	vec2 pos;
@@ -58,6 +69,14 @@ struct Player
 	CharacterIndex characterIndex;
 
 	f32 hitboxAnim;
+
+	PlayerState state;
+
+	f32 timer;
+
+	f32 iframes;
+
+	f32 bombCoolDownTimer;
 
 	f32 fireTimer;
 	i32 fireQueue;
@@ -245,12 +264,24 @@ struct Pickup
 
 	PickupType type;
 
+	f32 radius;
+
 	f32 lifeTime;
+};
+
+struct Stats
+{
+	i32 score;
+	i32 lives;
+	i32 power;
+	i32 bombs;
 };
 
 struct World
 {
 	Player player;
+
+	Stats stats;
 
 	Boss boss;
 
@@ -271,6 +302,8 @@ struct World
 
 	f32 stageLabelAlpha;
 	f32 stageLabelTargetAlpha;
+
+	bool DEBUG_showHitboxes;
 
 	Bullet bullets[MAX_NUM_BULLETS];
 	Bullet playerBullets[MAX_NUM_PLAYER_BULLETS];

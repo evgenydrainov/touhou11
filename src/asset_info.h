@@ -8,14 +8,14 @@ inline SpriteInfo *
 GetSpriteInfo(SpriteIndex sprite_index)
 {
 	Assert(sprite_index < SpriteIndex_COUNT);
-	return &g_sprite_info[sprite_index];
+	return &g_spriteInfo[sprite_index];
 }
 
 inline SpriteFrame
 GetSpriteFrame(SpriteInfo *info, int frame_index)
 {
 	Assert(frame_index >= 0);
-	Assert(frame_index < info->num_frames);
+	Assert(frame_index < info->numFrames);
 	return info->frames[frame_index];
 }
 
@@ -23,7 +23,7 @@ inline FontInfo *
 GetFontInfo(FontIndex font_index)
 {
 	Assert(font_index < FontIndex_COUNT);
-	return &g_font_info[font_index];
+	return &g_fontInfo[font_index];
 }
 
 inline int
@@ -43,14 +43,14 @@ SpriteAnimate(SpriteIndex spriteIndex, f32 frameIndex, f32 delta)
 {
 	SpriteInfo *info = GetSpriteInfo(spriteIndex);
 
-	frameIndex += info->anim_spd * delta;
+	frameIndex += info->animSpeed * delta;
 
-	if (frameIndex >= info->num_frames)
+	if (frameIndex >= info->numFrames)
 	{
-		f32 a = frameIndex - (f32)info->loop_frame;
-		f32 b = (f32)(info->num_frames - info->loop_frame);
+		f32 a = frameIndex - (f32)info->loopFrame;
+		f32 b = (f32)(info->numFrames - info->loopFrame);
 		Assert(b != 0);
-		frameIndex = (f32)info->loop_frame + Fmod(a, b);
+		frameIndex = (f32)info->loopFrame + Fmod(a, b);
 	}
 
 	return frameIndex;
