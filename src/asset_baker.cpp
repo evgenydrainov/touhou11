@@ -713,7 +713,7 @@ static void
 EndAtlas()
 {
 	char filepath[512];
-	snprintf(filepath, sizeof(filepath), "assets_baked/generated_atlas_%d.qoi", g_current_atlas_index);
+	snprintf(filepath, sizeof(filepath), "assets_baked/images/generated_atlas_%d.qoi", g_current_atlas_index);
 
 	WriteImageQOI(g_current_atlas.image, filepath);
 	FreeImage(&g_current_atlas.image);
@@ -999,7 +999,7 @@ EndAssetBaker()
 			if (g_raw_texture_info[i].includeInGame)
 			{
 				fprintf(g_asset_info_cpp_file, "    /* [%s] = */ {\n", g_raw_texture_info[i].name);
-				fprintf(g_asset_info_cpp_file, "        /* .filePath = */ \"%s.qoi\",\n", g_raw_texture_info[i].name);
+				fprintf(g_asset_info_cpp_file, "        /* .filePath = */ \"images/%s.qoi\",\n", g_raw_texture_info[i].name);
 				fprintf(g_asset_info_cpp_file, "        /* .wantMipMap = */ %d,\n", (int)g_raw_texture_info[i].wantMipMap);
 				fprintf(g_asset_info_cpp_file, "    },\n");
 			}
@@ -1007,7 +1007,7 @@ EndAssetBaker()
 		for (int i = 0; i < g_current_atlas_index; i++)
 		{
 			fprintf(g_asset_info_cpp_file, "    /* [tex_generated_atlas_%d] = */ {\n", i);
-			fprintf(g_asset_info_cpp_file, "        /* .filepath = */ \"generated_atlas_%d.qoi\",\n", i);
+			fprintf(g_asset_info_cpp_file, "        /* .filepath = */ \"images/generated_atlas_%d.qoi\",\n", i);
 			fprintf(g_asset_info_cpp_file, "    },\n");
 		}
 		fprintf(g_asset_info_cpp_file, "};\n\n");
@@ -1072,7 +1072,7 @@ EndAssetBaker()
 		if (g_raw_texture_info[i].includeInGame)
 		{
 			char filePath[256];
-			snprintf(filePath, sizeof(filePath), "assets_baked/%s.qoi", g_raw_texture_info[i].name);
+			snprintf(filePath, sizeof(filePath), "assets_baked/images/%s.qoi", g_raw_texture_info[i].name);
 			WriteImageQOI(g_raw_textures[i], filePath);
 		}
 	}

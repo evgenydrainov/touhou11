@@ -11,9 +11,6 @@ struct RenderBackendSoftwareData
 	int backbuffer_height;
 	int backbuffer_pitch;
 
-	f32 scale_x;
-	f32 scale_y;
-
 	Viewport viewport;
 };
 

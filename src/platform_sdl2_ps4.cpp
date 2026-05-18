@@ -35,7 +35,18 @@ PlatformAssertionFailed(const char *condition,
 						const char *file,
 						int line)
 {
-	PlatformLogHandler(LogLevel_Error, nullptr, 0, "ASSERTION FALIED: %s:%d: %s\n", file, line, condition);
+	char buf[512];
+	int written = stbsp_snprintf(buf, sizeof(buf), "ASSERTION FALIED: %s:%d: %s\n", file, line, condition);
+	if (written > sizeof(buf)-1)
+	{
+		written = sizeof(buf)-1;
+	}
+
+	write(STDERR_FILENO, buf, written); 
+
+	char newl = '\n';
+	write(STDERR_FILENO, &newl, 1); 
+
 	for (;;) {}
 }
 
@@ -102,6 +113,11 @@ PlatformLogHandler(LogLevel level,
 
 	char buf[512];
 	int written = stbsp_vsnprintf(buf, sizeof(buf), format, args);
+	if (written > sizeof(buf)-1)
+	{
+		written = sizeof(buf)-1;
+	}
+
 	write(STDERR_FILENO, buf, written); 
 
 	char newl = '\n';
@@ -130,8 +146,8 @@ struct SDL2PlatformState
 static void
 RenderBackendSetParams(SDL2PlatformState *state)
 {
-	state->render_backend.windowWidth  = GAME_RES_W;
-	state->render_backend.windowHeight = GAME_RES_H;
+	state->render_backend.windowWidth  = 1920;
+	state->render_backend.windowHeight = 1080;
 
 	state->render_backend.isExclusiveFullscreen = true;
 }
@@ -149,21 +165,18 @@ RenderBackendPrepareDraw(SDL2PlatformState *state)
 		state->render_backend_software.backbuffer_width = state->software_framebuffer->w;
 		state->render_backend_software.backbuffer_height = state->software_framebuffer->h;
 		state->render_backend_software.backbuffer_pitch = state->software_framebuffer->pitch;
-
-		state->render_backend_software.scale_x = 1;
-		state->render_backend_software.scale_y = 1;
 	}
 	else
 	{
-		/*SDL_Surface *window_surface = SDL_GetWindowSurface(state->window);
+		if (!state->software_window_surface)
+		{
+			state->software_window_surface = SDL_GetWindowSurface(state->window);
+		}
 
-		state->render_backend_software.backbuffer = window_surface->pixels;
-		state->render_backend_software.backbuffer_width = window_surface->w;
-		state->render_backend_software.backbuffer_height = window_surface->h;
-		state->render_backend_software.backbuffer_pitch = window_surface->pitch;
-
-		state->render_backend_software.scale_x = window_surface->w/(float)GAME_RES_W;
-		state->render_backend_software.scale_y = window_surface->h/(float)GAME_RES_H;*/
+		state->render_backend_software.backbuffer = state->software_window_surface->pixels;
+		state->render_backend_software.backbuffer_width = state->software_window_surface->w;
+		state->render_backend_software.backbuffer_height = state->software_window_surface->h;
+		state->render_backend_software.backbuffer_pitch = state->software_window_surface->pitch;
 	}
 
 	success = SoftwareRenderBackendPrepareDraw(&state->render_backend);
@@ -186,9 +199,7 @@ RenderBackendPresent(SDL2PlatformState *state)
 		{
 			//TIMED_BLOCK("RenderBackendPresent:SDL_BlitScaled");
 			//SDL_BlitScaled(state->software_framebuffer, nullptr, state->software_window_surface, nullptr);
-		}
 
-		{
 			TIMED_BLOCK("RenderBackendPresent:SDL_BlitSurface");
 			SDL_BlitSurface(state->software_framebuffer, nullptr, state->software_window_surface, nullptr);
 		}
@@ -256,6 +267,107 @@ PrintDebugRecords()
 #endif
 }
 
+enum
+{
+	PAD_BUTTON_CROSS		= 0,
+	PAD_BUTTON_CIRCLE,
+	PAD_BUTTON_SQUARE,
+	PAD_BUTTON_TRIANGLE,
+	PAD_BUTTON_L1,
+	PAD_BUTTON_R1,
+	PAD_BUTTON_OPTIONS		= 9,
+	PAD_BUTTON_L3			= 11,
+	PAD_BUTTON_R3,
+	PAD_BUTTON_UP,
+	PAD_BUTTON_DOWN,
+	PAD_BUTTON_LEFT,
+	PAD_BUTTON_RIGHT,
+	PAD_BUTTON_TOUCH_PAD,
+	PAD_BUTTON_L2,
+	PAD_BUTTON_R2
+};
+
+static void
+HandleEvent(SDL2PlatformState *state, SDL_Event *event)
+{
+	TIMED_FUNCTION();
+
+	switch (event->type)
+	{
+		case SDL_JOYBUTTONDOWN:
+		{
+			if (event->jbutton.button == PAD_BUTTON_UP)
+			{
+				state->gameInput.controllers[0].state |= GameInputKey_UP;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_DOWN)
+			{
+				state->gameInput.controllers[0].state |= GameInputKey_DOWN;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_LEFT)
+			{
+				state->gameInput.controllers[0].state |= GameInputKey_LEFT;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_RIGHT)
+			{
+				state->gameInput.controllers[0].state |= GameInputKey_RIGHT;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_CROSS)
+			{
+				state->gameInput.controllers[0].state |= GameInputKey_A;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_CIRCLE)
+			{
+				state->gameInput.controllers[0].state |= GameInputKey_B;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_SQUARE)
+			{
+				state->gameInput.controllers[0].state |= GameInputKey_X;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_TRIANGLE)
+			{
+				state->gameInput.controllers[0].state |= GameInputKey_Y;
+			}
+		} break;
+
+		case SDL_JOYBUTTONUP:
+		{
+			if (event->jbutton.button == PAD_BUTTON_UP)
+			{
+				state->gameInput.controllers[0].state &= ~GameInputKey_UP;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_DOWN)
+			{
+				state->gameInput.controllers[0].state &= ~GameInputKey_DOWN;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_LEFT)
+			{
+				state->gameInput.controllers[0].state &= ~GameInputKey_LEFT;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_RIGHT)
+			{
+				state->gameInput.controllers[0].state &= ~GameInputKey_RIGHT;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_CROSS)
+			{
+				state->gameInput.controllers[0].state &= ~GameInputKey_A;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_CIRCLE)
+			{
+				state->gameInput.controllers[0].state &= ~GameInputKey_B;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_SQUARE)
+			{
+				state->gameInput.controllers[0].state &= ~GameInputKey_X;
+			}
+			else if (event->jbutton.button == PAD_BUTTON_TRIANGLE)
+			{
+				state->gameInput.controllers[0].state &= ~GameInputKey_Y;
+			}
+		} break;
+	}
+}
+
 static void
 HandleEvents(SDL2PlatformState *state)
 {
@@ -264,6 +376,7 @@ HandleEvents(SDL2PlatformState *state)
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
 	{
+		HandleEvent(state, &event);
 	}
 }
 
@@ -289,7 +402,15 @@ DoOneFrame(SDL2PlatformState *state)
 		RenderBackendPresent(state);
 	}
 
-	PrintDebugRecords();
+	{
+		static int timer = 0;
+		timer++;
+		if (timer >= 60)
+		{
+			PrintDebugRecords();
+			timer = 0;
+		}
+	}
 }
 
 int main(int argc, char* args[])
@@ -302,6 +423,7 @@ int main(int argc, char* args[])
 
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) != 0)
 	{
+		LogError("SDL_Init failed");
 		for (;;) {}
 	}
 
@@ -309,27 +431,31 @@ int main(int argc, char* args[])
 		int rc = sceSysmoduleLoadModule(ORBIS_SYSMODULE_FREETYPE_OL);
 		if (rc < 0)
 		{
+			LogError("sceSysmoduleLoadModule(ORBIS_SYSMODULE_FREETYPE_OL) failed");
 			for (;;) {}
 		}
 	}
 
 	SDL2PlatformState state = {};
-	state.software_render_to_framebuffer = true;
+	state.software_render_to_framebuffer = false;
 
 	state.window = SDL_CreateWindow("main", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 1920, 1080, 0);
 	if (!state.window)
 	{
+		LogError("SDL_CreateWindow failed");
 		for (;;) {}
 	}
 
 	if (SDL_NumJoysticks() < 1)
 	{
+		LogError("SDL_NumJoysticks() < 1");
 		for (;;) {}
 	}
 
 	state.controller = SDL_JoystickOpen(0);
 	if (state.controller == NULL)
 	{
+		LogError("SDL_JoystickOpen failed");
 		for (;;) {}
 	}
 

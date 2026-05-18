@@ -24,12 +24,6 @@ SoftwareRenderBackendDrawLine(RenderBackendSoftwareData *data,
 							  RenderVertex2D vertex1,
 							  RenderVertex2D vertex2)
 {
-	vertex1.x *= data->scale_x;
-	vertex1.y *= data->scale_y;
-
-	vertex2.x *= data->scale_x;
-	vertex2.y *= data->scale_y;
-
 	vertex1.x = data->viewport.x + (vertex1.x + 1.0f) * 0.5f * data->viewport.width;
 	vertex1.y = data->viewport.y + (vertex1.y + 1.0f) * 0.5f * data->viewport.height;
 
@@ -123,15 +117,6 @@ SoftwareRenderBackendDrawTriangle(RenderBackendSoftwareData *data,
 								  RenderVertex2D vertex2,
 								  RenderVertex2D vertex3)
 {
-	vertex1.x *= data->scale_x;
-	vertex1.y *= data->scale_y;
-
-	vertex2.x *= data->scale_x;
-	vertex2.y *= data->scale_y;
-
-	vertex3.x *= data->scale_x;
-	vertex3.y *= data->scale_y;
-
 	vertex1.x = data->viewport.x + (vertex1.x + 1.0f) * 0.5f * data->viewport.width;
 	vertex1.y = data->viewport.y + (vertex1.y + 1.0f) * 0.5f * data->viewport.height;
 
@@ -225,47 +210,50 @@ RENDER_BACKEND_DRAW_QUADS(SoftwareRenderBackendDrawQuads)
 
 	Assert(num_vertices % 4 == 0);
 
-	for (int vertex_index = 0; vertex_index < num_vertices; vertex_index += 4)
+	if (texture->pixels)
 	{
-		RenderVertex2D vertex0 = vertices[vertex_index+0];
-		RenderVertex2D vertex1 = vertices[vertex_index+1];
-		RenderVertex2D vertex2 = vertices[vertex_index+2];
-		RenderVertex2D vertex3 = vertices[vertex_index+3];
+		for (int vertex_index = 0; vertex_index < num_vertices; vertex_index += 4)
+		{
+			RenderVertex2D vertex0 = vertices[vertex_index+0];
+			RenderVertex2D vertex1 = vertices[vertex_index+1];
+			RenderVertex2D vertex2 = vertices[vertex_index+2];
+			RenderVertex2D vertex3 = vertices[vertex_index+3];
 
-		vertex0.pos = (backend->projection * V4(vertex0.x, vertex0.y, 0.0f, 1.0f)).xy;
-		vertex1.pos = (backend->projection * V4(vertex1.x, vertex1.y, 0.0f, 1.0f)).xy;
-		vertex2.pos = (backend->projection * V4(vertex2.x, vertex2.y, 0.0f, 1.0f)).xy;
-		vertex3.pos = (backend->projection * V4(vertex3.x, vertex3.y, 0.0f, 1.0f)).xy;
+			vertex0.pos = (backend->projection * V4(vertex0.x, vertex0.y, 0.0f, 1.0f)).xy;
+			vertex1.pos = (backend->projection * V4(vertex1.x, vertex1.y, 0.0f, 1.0f)).xy;
+			vertex2.pos = (backend->projection * V4(vertex2.x, vertex2.y, 0.0f, 1.0f)).xy;
+			vertex3.pos = (backend->projection * V4(vertex3.x, vertex3.y, 0.0f, 1.0f)).xy;
 
-#if 0
-		SoftwareRenderBackendDrawTriangle(data,
-										  texture,
+#if 1
+			SoftwareRenderBackendDrawTriangle(data,
+											  texture,
+											  vertex0,
+											  vertex1,
+											  vertex2);
+
+			SoftwareRenderBackendDrawTriangle(data,
+											  texture,
+											  vertex2,
+											  vertex3,
+											  vertex0);
+#else
+			SoftwareRenderBackendDrawLine(data,
 										  vertex0,
+										  vertex1);
+
+			SoftwareRenderBackendDrawLine(data,
 										  vertex1,
 										  vertex2);
 
-		SoftwareRenderBackendDrawTriangle(data,
-										  texture,
+			SoftwareRenderBackendDrawLine(data,
 										  vertex2,
+										  vertex3);
+
+			SoftwareRenderBackendDrawLine(data,
 										  vertex3,
 										  vertex0);
-#else
-		SoftwareRenderBackendDrawLine(data,
-									  vertex0,
-									  vertex1);
-
-		SoftwareRenderBackendDrawLine(data,
-									  vertex1,
-									  vertex2);
-
-		SoftwareRenderBackendDrawLine(data,
-									  vertex2,
-									  vertex3);
-
-		SoftwareRenderBackendDrawLine(data,
-									  vertex3,
-									  vertex0);
 #endif
+		}
 	}
 
 	// LogInfo("DrawQuads: %d quads", num_vertices/4);

@@ -1331,18 +1331,23 @@ GameRenderHUDPass(Game *game,
 		backend->projection = projection;
 	}
 
-	DrawSprite(&game->renderer, backend, assets,
-			   spr_background_3_left, 0,
-			   0, 0);
-	DrawSprite(&game->renderer, backend, assets,
-			   spr_background_3_right, 0,
-			   2*416, 0);
-	DrawSprite(&game->renderer, backend, assets,
-			   spr_background_3_top, 0,
-			   2*32, 0);
-	DrawSprite(&game->renderer, backend, assets,
-			   spr_background_3_bottom, 0,
-			   2*32, 2*464);
+	// draw background
+#if 1
+	{
+		DrawSprite(&game->renderer, backend, assets,
+				   spr_background_3_left, 0,
+				   0, 0);
+		DrawSprite(&game->renderer, backend, assets,
+				   spr_background_3_right, 0,
+				   2*416, 0);
+		DrawSprite(&game->renderer, backend, assets,
+				   spr_background_3_top, 0,
+				   2*32, 0);
+		DrawSprite(&game->renderer, backend, assets,
+				   spr_background_3_bottom, 0,
+				   2*32, 2*464);
+	}
+#endif
 
 	// draw difficulty label
 	{

@@ -40,6 +40,8 @@ LoadTextureAsset(TextureAsset *texture,
 			if (backend->UploadTextureAsset(backend, texture))
 			{
 				result = true;
+
+				LogInfo("Loaded texture %s (%d x %d)", filePath, texture->width, texture->height);
 			}
 			else
 			{

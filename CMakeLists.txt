@@ -147,6 +147,11 @@ add_custom_command(
            ${ASSET_INFO_GENERATED_CPP}
            ${SINE_TABLE_GENERATED_CPP}
     COMMAND ${CMAKE_COMMAND} -E make_directory assets_baked
+    COMMAND ${CMAKE_COMMAND} -E make_directory assets_baked/audio
+    COMMAND ${CMAKE_COMMAND} -E make_directory assets_baked/fonts
+    COMMAND ${CMAKE_COMMAND} -E make_directory assets_baked/images
+    COMMAND ${CMAKE_COMMAND} -E make_directory assets_baked/misc
+    COMMAND ${CMAKE_COMMAND} -E make_directory assets_baked/videos
     COMMAND asset_baker
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     DEPENDS asset_baker

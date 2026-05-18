@@ -413,20 +413,12 @@ SDL_GetWindowSizeInPixels(SDL_Window *window, int *w, int *h)
 static void
 RenderBackendSetParams(SDL2PlatformState *state)
 {
-	if (state->render_backend_type == RenderBackendType_Software)
-	{
-		state->render_backend.windowWidth  = GAME_RES_W;
-		state->render_backend.windowHeight = GAME_RES_H;
-	}
-	else
-	{
-		int windowWidth;
-		int windowHeight;
-		SDL_GetWindowSizeInPixels(state->window, &windowWidth, &windowHeight);
+	int windowWidth;
+	int windowHeight;
+	SDL_GetWindowSizeInPixels(state->window, &windowWidth, &windowHeight);
 
-		state->render_backend.windowWidth  = windowWidth;
-		state->render_backend.windowHeight = windowHeight;
-	}
+	state->render_backend.windowWidth  = windowWidth;
+	state->render_backend.windowHeight = windowHeight;
 
 	state->render_backend.isExclusiveFullscreen = PlatformSDL2IsExclusiveFullscreen(state->window);
 }
@@ -507,9 +499,6 @@ RenderBackendPrepareDraw(SDL2PlatformState *state)
 				state->render_backend_software.backbuffer_width = state->software_framebuffer->w;
 				state->render_backend_software.backbuffer_height = state->software_framebuffer->h;
 				state->render_backend_software.backbuffer_pitch = state->software_framebuffer->pitch;
-
-				state->render_backend_software.scale_x = 1;
-				state->render_backend_software.scale_y = 1;
 			}
 			else
 			{
@@ -519,9 +508,6 @@ RenderBackendPrepareDraw(SDL2PlatformState *state)
 				state->render_backend_software.backbuffer_width = window_surface->w;
 				state->render_backend_software.backbuffer_height = window_surface->h;
 				state->render_backend_software.backbuffer_pitch = window_surface->pitch;
-
-				state->render_backend_software.scale_x = window_surface->w/(float)GAME_RES_W;
-				state->render_backend_software.scale_y = window_surface->h/(float)GAME_RES_H;
 			}
 
 			success = SoftwareRenderBackendPrepareDraw(&state->render_backend);
