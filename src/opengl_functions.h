@@ -1,9 +1,14 @@
 #pragma once
 
+#if PLATFORM_PS4
+#include <orbis/Pigletv2VSH.h>
+#define GL_QUADS 0x0007
+#else
 //
 // NOTE: Glad is only used for the header, the implementation is not used.
 //
 #include "glad2.h"
+#endif
 
 struct OpenGLFunctions
 {
@@ -26,6 +31,8 @@ struct OpenGLFunctions
 	//
 	// OpenGL 1.1 Only
 	//
+#if PLATFORM_PS4
+#else
 	PFNGLENABLECLIENTSTATEPROC EnableClientState;
 	PFNGLVERTEXPOINTERPROC VertexPointer;
 	PFNGLTEXCOORDPOINTERPROC TexCoordPointer;
@@ -34,6 +41,7 @@ struct OpenGLFunctions
 	PFNGLORTHOPROC Ortho;
 	PFNGLLOADMATRIXFPROC LoadMatrixf;
 	PFNGLCOLORPOINTERPROC ColorPointer;
+#endif
 
 	//
 	// GLES 2.0+

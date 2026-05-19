@@ -10,7 +10,7 @@ set PKG_CONTENT_ID="IV0000-BREW00000_00-TOUHOU11XX000000"
 Rem Libraries to link in
 set libraries=-lc -lkernel -lc++ -lSceUserService -lSceVideoOut -lSceAudioOut -lScePad -lSceSysmodule -lSceFreeType -lSDL2
 
-set extra_flags=-O3 -fdeclspec -DENABLE_DEBUG_PROFILER=1
+set extra_flags=-O3 -fdeclspec -DPLATFORM_PS4=1 -DENABLE_DEBUG_PROFILER=1
 
 set intdir=intermediates\
 set targetname=touhou11

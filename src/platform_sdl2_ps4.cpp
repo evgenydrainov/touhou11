@@ -87,20 +87,6 @@ PlatformLoadAssetFile(const char *assetFilePath,
 	return result;
 }
 
-static const char *
-GetLogPrefix(LogLevel level)
-{
-	switch (level)
-	{
-		case LogLevel_Info:  return "INFO";
-		case LogLevel_Warn:  return "WARN";
-		case LogLevel_Error: return "ERROR";
-	}
-
-	Assert(false);
-	return "";
-}
-
 void
 PlatformLogHandler(LogLevel level,
 				   const char *file,

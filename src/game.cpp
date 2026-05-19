@@ -1075,6 +1075,8 @@ DrawStage3DBackground(StageBG *bg,
 	backend->shaderIndex = ShaderIndex_Normal;
 
 	memory->transientArena.pos = arenaSavePos;
+
+	backend->modelView = Matrix4Identity();
 }
 
 static i32

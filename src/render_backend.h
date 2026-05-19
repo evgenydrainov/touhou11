@@ -24,6 +24,8 @@ struct RenderVertex2D
 	u32 color;
 };
 
+static_assert(sizeof(RenderVertex2D) == 20);
+
 struct RenderVertex3D
 {
 	f32 x;
