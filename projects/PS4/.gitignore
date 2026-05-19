@@ -3,3 +3,4 @@ intermediates/
 eboot.bin
 pkg.gp4
 *.pkg
+param.sfo
