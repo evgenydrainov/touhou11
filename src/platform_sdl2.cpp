@@ -75,7 +75,7 @@ DEBUG_PlatformGetPerformanceCounter(void)
 }
 
 static f64
-GetTimef64(void)
+PlatformSDL2GetTime(void)
 {
 	u64 perfCounter = SDL_GetPerformanceCounter();
 	f64 result = (f64)(perfCounter - g_initPerfCounter) / g_perfFreqF64;
@@ -116,6 +116,7 @@ ToSDLLogProirity(LogLevel level)
 	return result;
 }
 
+#if 0
 static const char *
 StripDirectoryFromFilePath(const char *file)
 {
@@ -135,6 +136,7 @@ StripDirectoryFromFilePath(const char *file)
 	file += i;
 	return file;
 }
+#endif
 
 void
 PlatformLogHandler(LogLevel level,
@@ -154,7 +156,7 @@ PlatformLogHandler(LogLevel level,
 	char message[512];
 	SDL_vsnprintf(message, sizeof(message), format, args);
 
-	f64 time = GetTimef64();
+	f64 time = PlatformSDL2GetTime();
 	int sec = (int)time % 60;
 	int min = (int)(time/60) % 60;
 	SDL_LogMessage(SDL_LOG_CATEGORY_APPLICATION, priority, "[%02d:%02d] [%s:%d]: %s\n", min, sec, file, line, message);
@@ -504,6 +506,13 @@ RenderBackendPrepareDraw(SDL2PlatformState *state)
 			{
 				SDL_Surface *window_surface = SDL_GetWindowSurface(state->window);
 
+				static bool printed = false;
+				if (!printed)
+				{
+					LogInfo("SDL Window Surface Format: %s", SDL_GetPixelFormatName(window_surface->format->format));
+					printed = true;
+				}
+
 				state->render_backend_software.backbuffer = window_surface->pixels;
 				state->render_backend_software.backbuffer_width = window_surface->w;
 				state->render_backend_software.backbuffer_height = window_surface->h;
@@ -583,18 +592,26 @@ PlatformSDL2HandleEvent(SDL2PlatformState *state, SDL_Event *event)
 				{
 					SDL_SetRelativeMouseMode((SDL_bool)!SDL_GetRelativeMouseMode());
 				}
-				else if (event->key.keysym.scancode == SDL_SCANCODE_R)
+
+				auto DEBUG_HandleKeyRange = [&](u64 scancodeFrom, u64 scancodeTo,
+												u64 asciiFrom)
 				{
-					state->gameInput.DEBUG_KeyRPressed = true;
-				}
-				else if (event->key.keysym.scancode == SDL_SCANCODE_H)
-				{
-					state->gameInput.DEBUG_KeyHPressed = true;
-				}
-				else if (event->key.keysym.scancode == SDL_SCANCODE_1)
-				{
-					state->gameInput.DEBUG_Key1Pressed = true;
-				}
+					if (event->key.keysym.scancode >= scancodeFrom
+						&& event->key.keysym.scancode <= scancodeTo)
+					{
+						u64 keyIndex = event->key.keysym.scancode - scancodeFrom;
+						u64 key = asciiFrom + keyIndex;
+						u64 bitfieldIndex = key / 64;
+						u64 bitMask = 1LLU << (key % 64);
+
+						state->gameInput.DEBUG_keyboardState[bitfieldIndex] |= bitMask;
+						state->gameInput.DEBUG_keyboardStatePress[bitfieldIndex] |= bitMask;
+					}
+				};
+
+				DEBUG_HandleKeyRange(SDL_SCANCODE_A, SDL_SCANCODE_Z, 'A');
+				DEBUG_HandleKeyRange(SDL_SCANCODE_1, SDL_SCANCODE_9, '1');
+				DEBUG_HandleKeyRange(SDL_SCANCODE_0, SDL_SCANCODE_0, '0');
 			}
 
 			if (event->key.keysym.scancode == SDL_SCANCODE_F5)
@@ -607,15 +624,35 @@ PlatformSDL2HandleEvent(SDL2PlatformState *state, SDL_Event *event)
 				state->DEBUG_frameAdvanceMode = false;
 			}
 		} break;
+
+		case SDL_KEYUP:
+		{
+			auto DEBUG_HandleKeyRange = [&](u64 scancodeFrom, u64 scancodeTo,
+											u64 asciiFrom)
+			{
+				if (event->key.keysym.scancode >= scancodeFrom
+					&& event->key.keysym.scancode <= scancodeTo)
+				{
+					u64 keyIndex = event->key.keysym.scancode - scancodeFrom;
+					u64 key = asciiFrom + keyIndex;
+					u64 bitfieldIndex = key / 64;
+					u64 bitMask = 1LLU << (key % 64);
+
+					state->gameInput.DEBUG_keyboardState[bitfieldIndex] &= ~bitMask;
+				}
+			};
+
+			DEBUG_HandleKeyRange(SDL_SCANCODE_A, SDL_SCANCODE_Z, 'A');
+			DEBUG_HandleKeyRange(SDL_SCANCODE_1, SDL_SCANCODE_9, '1');
+			DEBUG_HandleKeyRange(SDL_SCANCODE_0, SDL_SCANCODE_0, '0');
+		} break;
 	}
 }
 
 static void
 PlatformSDL2HandleEvents(SDL2PlatformState *state)
 {
-	state->gameInput.DEBUG_KeyRPressed = false;
-	state->gameInput.DEBUG_KeyHPressed = false;
-	state->gameInput.DEBUG_Key1Pressed = false;
+	MemSet(&state->gameInput.DEBUG_keyboardStatePress[0], 0, sizeof(state->gameInput.DEBUG_keyboardStatePress));
 
 	SDL_Event event;
 	while (SDL_PollEvent(&event))
@@ -684,11 +721,6 @@ PlatformSDL2UpdateInput(SDL2PlatformState *state)
 		controller->state |= GameInputKey_X;
 	}
 
-	state->gameInput.DEBUG_KeyW = keyboardState[SDL_SCANCODE_W] != 0;
-	state->gameInput.DEBUG_KeyA = keyboardState[SDL_SCANCODE_A] != 0;
-	state->gameInput.DEBUG_KeyS = keyboardState[SDL_SCANCODE_S] != 0;
-	state->gameInput.DEBUG_KeyD = keyboardState[SDL_SCANCODE_D] != 0;
-
 	controller->statePress = (~prevState) & controller->state;
 	controller->stateRelease = (~controller->state) & prevState;
 }
@@ -698,7 +730,7 @@ PlatformSDL2DoOneFrame(SDL2PlatformState *state)
 {
 	TIMED_FUNCTION();
 
-	f64 frameStartTime = GetTimef64();
+	f64 frameStartTime = PlatformSDL2GetTime();
 	f64 deltaSeconds = frameStartTime - state->prevTime;
 
 	if (frameStartTime - state->lastTimePrinted > 1)
@@ -759,7 +791,7 @@ PlatformSDL2DoOneFrame(SDL2PlatformState *state)
 	{
 		f64 frameEndTime = frameStartTime + 1.0/state->targetFPS;
 
-		f64 time = GetTimef64();
+		f64 time = PlatformSDL2GetTime();
 		if (time < frameEndTime)
 		{
 			u32 milliseconds = (u32)((frameEndTime - time)*1000.0);
@@ -768,7 +800,7 @@ PlatformSDL2DoOneFrame(SDL2PlatformState *state)
 				SDL_Delay(milliseconds - 1);
 			}
 
-			while (GetTimef64() < frameEndTime)
+			while (PlatformSDL2GetTime() < frameEndTime)
 			{
 				SDL_CPUPauseInstruction();
 			}

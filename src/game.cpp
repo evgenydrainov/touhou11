@@ -388,20 +388,20 @@ UpdateStage3DBackground(StageBG *bg,
 
 		f32 speed = 2.0f/60.0f;
 
-		if (input->DEBUG_KeyW)
+		if (DEBUG_IsKeyDown(input, 'W'))
 		{
 			bg->camPos += (speed * input->delta) * camForward;
 		}
-		if (input->DEBUG_KeyS)
+		if (DEBUG_IsKeyDown(input, 'S'))
 		{
 			bg->camPos -= (speed * input->delta) * camForward;
 		}
-		if (input->DEBUG_KeyA)
+		if (DEBUG_IsKeyDown(input, 'A'))
 		{
 			bg->camPos.z += (speed * input->delta) * Sin(bg->camYaw - Pi32/2.0f);
 			bg->camPos.x += (speed * input->delta) * Cos(bg->camYaw - Pi32/2.0f);
 		}
-		if (input->DEBUG_KeyD)
+		if (DEBUG_IsKeyDown(input, 'D'))
 		{
 			bg->camPos.z += (speed * input->delta) * Sin(bg->camYaw + Pi32/2.0f);
 			bg->camPos.x += (speed * input->delta) * Cos(bg->camYaw + Pi32/2.0f);
@@ -843,7 +843,7 @@ WorldUpdate(World *world,
 
 	world->stageTimer += input->delta;
 
-	if (input->DEBUG_KeyRPressed)
+	if (DEBUG_IsKeyPressed(input, 'R'))
 	{
 		RestartStage(world);
 	}
@@ -1591,8 +1591,8 @@ GameUpdateAndRender(GameMemory *memory,
 		GameUpdate(game, input);
 	}
 
-	game->showDebugRecords ^= input->DEBUG_Key1Pressed;
-	game->world.DEBUG_showHitboxes ^= input->DEBUG_KeyHPressed;
+	game->showDebugRecords ^= DEBUG_IsKeyPressed(input, '1');
+	game->world.DEBUG_showHitboxes ^= DEBUG_IsKeyPressed(input, 'H');
 
 	GameRender(game, assets, backend, input, memory);
 }

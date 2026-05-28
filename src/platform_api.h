@@ -40,18 +40,13 @@ struct GameInput
 	i32 DEBUG_mouseDeltaY;
 	bool DEBUG_mouseCaptured;
 
-	bool DEBUG_KeyW;
-	bool DEBUG_KeyA;
-	bool DEBUG_KeyS;
-	bool DEBUG_KeyD;
-
-	bool DEBUG_KeyRPressed;
-	bool DEBUG_KeyHPressed;
-	bool DEBUG_Key1Pressed;
-
 	bool DEBUG_skipThisFrame;
 
 	f64 DEBUG_perfFreqF64;
+
+	u64 DEBUG_keyboardState[2];
+	u64 DEBUG_keyboardStatePress[2];
+	u64 DEBUG_keyboardStateRelease[2];
 };
 
 struct GameMemory
@@ -88,6 +83,37 @@ IsKeyReleased(GameInput *input,
 	bool result = (input->controllers[controllerIndex].stateRelease & key) != 0;
 	return result;
 }
+
+
+
+inline bool
+DEBUG_IsKeyDown(GameInput *input, u64 key)
+{
+	u64 bitfieldIndex = key / 64;
+	u64 bitMask = 1LLU << (key % 64);
+	bool result = (input->DEBUG_keyboardState[bitfieldIndex] & bitMask) != 0;
+	return result;
+}
+
+inline bool
+DEBUG_IsKeyPressed(GameInput *input, u64 key)
+{
+	u64 bitfieldIndex = key / 64;
+	u64 bitMask = 1LLU << (key % 64);
+	bool result = (input->DEBUG_keyboardStatePress[bitfieldIndex] & bitMask) != 0;
+	return result;
+}
+
+inline bool
+DEBUG_IsKeyReleased(GameInput *input, u64 key)
+{
+	u64 bitfieldIndex = key / 64;
+	u64 bitMask = 1LLU << (key % 64);
+	bool result = (input->DEBUG_keyboardStateRelease[bitfieldIndex] & bitMask) != 0;
+	return result;
+}
+
+
 
 enum SoundIndex : u32
 {
