@@ -131,7 +131,6 @@ D3D9RenderBackendInit(RenderBackend *backend,
 	backend->DrawQuads = D3D9RenderBackendDrawQuads;
 	backend->UploadTextureAsset = D3D9RenderBackendUploadTextureAsset;
 	backend->Clear = D3D9RenderBackendClear;
-	backend->SetViewport = D3D9RenderBackendSetViewport;
 	backend->OnFullscreenChanged = D3D9RenderBackendOnFullscreenChanged;
 
 	Direct3DCreate9Func *Direct3DCreate9 = (Direct3DCreate9Func *)Direct3DCreate9_;
@@ -378,6 +377,16 @@ RENDER_BACKEND_DRAW_QUADS(D3D9RenderBackendDrawQuads)
 
 		device->SetTexture(0, textureHandle);
 
+		D3DVIEWPORT9 viewport = {};
+		viewport.X = backend->viewport.x;
+		viewport.Y = backend->viewport.y;
+		viewport.Width = backend->viewport.width;
+		viewport.Height = backend->viewport.height;
+		viewport.MinZ = 0.0f;
+		viewport.MaxZ = 1.0f;
+
+		device->SetViewport(&viewport);
+
 		HRESULT hr = device->BeginScene();
 		if (SUCCEEDED(hr))
 		{
@@ -469,29 +478,6 @@ RENDER_BACKEND_CLEAR(D3D9RenderBackendClear)
 	data->device->Clear(0, nullptr, D3DCLEAR_TARGET, color, 0.0f, 0);
 }
 
-RENDER_BACKEND_SET_VIEWPORT(D3D9RenderBackendSetViewport)
-{
-	RenderBackendD3D9Data *data = (RenderBackendD3D9Data *)backend->userdata;
-
-	D3DVIEWPORT9 viewport = {};
-	viewport.X = x;
-	viewport.Y = y;
-	viewport.Width = width;
-	viewport.Height = height;
-	viewport.MinZ = 0.0f;
-	viewport.MaxZ = 1.0f;
-
-	HRESULT hr = data->device->SetViewport(&viewport);
-	if (SUCCEEDED(hr))
-	{
-		// success
-	}
-	else
-	{
-		LogError("SetViewport() failed");
-	}
-}
-
 #else
 
 bool D3D9RenderBackendInit(RenderBackend *backend,
@@ -517,9 +503,6 @@ RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(D3D9RenderBackendUploadTextureAsset)
 	return false;
 }
 RENDER_BACKEND_CLEAR(D3D9RenderBackendClear)
-{
-}
-RENDER_BACKEND_SET_VIEWPORT(D3D9RenderBackendSetViewport)
 {
 }
 RENDER_BACKEND_ON_FULLSCREEN_CHANGED(D3D9RenderBackendOnFullscreenChanged)

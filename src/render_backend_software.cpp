@@ -14,21 +14,22 @@ SoftwareRenderBackendInit(RenderBackend *backend)
 	backend->DrawCircles = SoftwareRenderBackendDrawCircles;
 	backend->UploadTextureAsset = SoftwareRenderBackendUploadTextureAsset;
 	backend->Clear = SoftwareRenderBackendClear;
-	backend->SetViewport = SoftwareRenderBackendSetViewport;
 	backend->SetUniform = SoftwareRenderBackendSetUniform;
 	backend->OnFullscreenChanged = SoftwareRenderBackendOnFullscreenChanged;
 }
 
 static void
-SoftwareRenderBackendDrawLine(RenderBackendSoftwareData *data,
+SoftwareRenderBackendDrawLine(RenderBackend *backend,
 							  RenderVertex2D vertex1,
 							  RenderVertex2D vertex2)
 {
-	vertex1.pos.x = data->viewport.x + (vertex1.pos.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex1.pos.y = data->viewport.y + (vertex1.pos.y + 1.0f) * 0.5f * data->viewport.height;
+	RenderBackendSoftwareData *data = (RenderBackendSoftwareData *)backend->userdata;
 
-	vertex2.pos.x = data->viewport.x + (vertex2.pos.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex2.pos.y = data->viewport.y + (vertex2.pos.y + 1.0f) * 0.5f * data->viewport.height;
+	vertex1.pos.x = backend->viewport.x + (vertex1.pos.x + 1.0f) * 0.5f * backend->viewport.width;
+	vertex1.pos.y = backend->viewport.y + (vertex1.pos.y + 1.0f) * 0.5f * backend->viewport.height;
+
+	vertex2.pos.x = backend->viewport.x + (vertex2.pos.x + 1.0f) * 0.5f * backend->viewport.width;
+	vertex2.pos.y = backend->viewport.y + (vertex2.pos.y + 1.0f) * 0.5f * backend->viewport.height;
 
 	vertex1.pos.y = data->backbuffer_height - vertex1.pos.y;
 	vertex2.pos.y = data->backbuffer_height - vertex2.pos.y;
@@ -111,20 +112,22 @@ SampleTexture(u32 *texture_pixels,
 }
 
 static void
-SoftwareRenderBackendDrawTriangle(RenderBackendSoftwareData *data,
+SoftwareRenderBackendDrawTriangle(RenderBackend *backend,
 								  TextureAsset *texture,
 								  RenderVertex2D vertex1,
 								  RenderVertex2D vertex2,
 								  RenderVertex2D vertex3)
 {
-	vertex1.pos.x = data->viewport.x + (vertex1.pos.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex1.pos.y = data->viewport.y + (vertex1.pos.y + 1.0f) * 0.5f * data->viewport.height;
+	RenderBackendSoftwareData *data = (RenderBackendSoftwareData *)backend->userdata;
 
-	vertex2.pos.x = data->viewport.x + (vertex2.pos.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex2.pos.y = data->viewport.y + (vertex2.pos.y + 1.0f) * 0.5f * data->viewport.height;
+	vertex1.pos.x = backend->viewport.x + (vertex1.pos.x + 1.0f) * 0.5f * backend->viewport.width;
+	vertex1.pos.y = backend->viewport.y + (vertex1.pos.y + 1.0f) * 0.5f * backend->viewport.height;
 
-	vertex3.pos.x = data->viewport.x + (vertex3.pos.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex3.pos.y = data->viewport.y + (vertex3.pos.y + 1.0f) * 0.5f * data->viewport.height;
+	vertex2.pos.x = backend->viewport.x + (vertex2.pos.x + 1.0f) * 0.5f * backend->viewport.width;
+	vertex2.pos.y = backend->viewport.y + (vertex2.pos.y + 1.0f) * 0.5f * backend->viewport.height;
+
+	vertex3.pos.x = backend->viewport.x + (vertex3.pos.x + 1.0f) * 0.5f * backend->viewport.width;
+	vertex3.pos.y = backend->viewport.y + (vertex3.pos.y + 1.0f) * 0.5f * backend->viewport.height;
 
 	vertex1.pos.y = data->backbuffer_height - vertex1.pos.y;
 	vertex2.pos.y = data->backbuffer_height - vertex2.pos.y;
@@ -225,31 +228,31 @@ RENDER_BACKEND_DRAW_QUADS(SoftwareRenderBackendDrawQuads)
 			vertex3.pos = (backend->projection * V4(vertex3.pos.x, vertex3.pos.y, 0.0f, 1.0f)).xy;
 
 #if 1
-			SoftwareRenderBackendDrawTriangle(data,
+			SoftwareRenderBackendDrawTriangle(backend,
 											  texture,
 											  vertex0,
 											  vertex1,
 											  vertex2);
 
-			SoftwareRenderBackendDrawTriangle(data,
+			SoftwareRenderBackendDrawTriangle(backend,
 											  texture,
 											  vertex2,
 											  vertex3,
 											  vertex0);
 #else
-			SoftwareRenderBackendDrawLine(data,
+			SoftwareRenderBackendDrawLine(backend,
 										  vertex0,
 										  vertex1);
 
-			SoftwareRenderBackendDrawLine(data,
+			SoftwareRenderBackendDrawLine(backend,
 										  vertex1,
 										  vertex2);
 
-			SoftwareRenderBackendDrawLine(data,
+			SoftwareRenderBackendDrawLine(backend,
 										  vertex2,
 										  vertex3);
 
-			SoftwareRenderBackendDrawLine(data,
+			SoftwareRenderBackendDrawLine(backend,
 										  vertex3,
 										  vertex0);
 #endif
@@ -312,13 +315,6 @@ RENDER_BACKEND_CLEAR(SoftwareRenderBackendClear)
 
 		pDestRow += data->backbuffer_pitch;
 	}
-}
-
-RENDER_BACKEND_SET_VIEWPORT(SoftwareRenderBackendSetViewport)
-{
-	RenderBackendSoftwareData *data = (RenderBackendSoftwareData *)backend->userdata;
-
-	data->viewport = {x, y, width, height};
 }
 
 RENDER_BACKEND_SET_UNIFORM(SoftwareRenderBackendSetUniform)

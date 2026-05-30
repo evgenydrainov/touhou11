@@ -38,5 +38,4 @@ bool D3D9RenderBackendPrepareDraw(RenderBackend *backend);
 RENDER_BACKEND_DRAW_QUADS(D3D9RenderBackendDrawQuads);
 RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(D3D9RenderBackendUploadTextureAsset);
 RENDER_BACKEND_CLEAR(D3D9RenderBackendClear);
-RENDER_BACKEND_SET_VIEWPORT(D3D9RenderBackendSetViewport);
 RENDER_BACKEND_ON_FULLSCREEN_CHANGED(D3D9RenderBackendOnFullscreenChanged);

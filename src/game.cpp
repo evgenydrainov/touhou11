@@ -909,7 +909,7 @@ SetViewportKeepAspect(RenderBackend *backend,
 											  GAME_RES_W, GAME_RES_H,
 											  x, y, width, height);
 
-	backend->SetViewport(backend, viewport.x, viewport.y, viewport.width, viewport.height);
+	backend->viewport = viewport;
 }
 
 static void
@@ -1405,9 +1405,7 @@ GameRenderDebugPass(Game *game,
 {
 	TIMED_FUNCTION();
 
-	backend->SetViewport(backend,
-						 0, 0,
-						 backend->targetWidth, backend->targetHeight);
+	backend->viewport = {0, 0, backend->targetWidth, backend->targetHeight};
 
 	{
 		mat4 projection = Matrix4Ortho(0.0f, (f32)backend->targetWidth, (f32)backend->targetHeight, 0.0f);

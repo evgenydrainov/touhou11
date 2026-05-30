@@ -60,7 +60,6 @@ enum ShaderUniformType : u32
 #define RENDER_BACKEND_DRAW_CIRCLES(Name)          void Name(RenderBackend *backend, TextureAsset *texture, RenderVertex2D *vertices, int num_vertices)
 #define RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(Name)  bool Name(RenderBackend *backend, TextureAsset *texture)
 #define RENDER_BACKEND_CLEAR(Name)                 void Name(RenderBackend *backend, float r, float g, float b, float a)
-#define RENDER_BACKEND_SET_VIEWPORT(Name)          void Name(RenderBackend *backend, int x, int y, int width, int height)
 #define RENDER_BACKEND_SET_UNIFORM(Name)           void Name(RenderBackend *backend, const char *name, ShaderUniformType type, void *value)
 #define RENDER_BACKEND_ON_FULLSCREEN_CHANGED(Name) void Name(RenderBackend *backend)
 
@@ -69,7 +68,6 @@ typedef RENDER_BACKEND_DRAW_TRIANGLES_3D(RenderBackend_DrawTriangles3D);
 typedef RENDER_BACKEND_DRAW_CIRCLES(RenderBackend_DrawCircles);
 typedef RENDER_BACKEND_UPLOAD_TEXTURE_ASSET(RenderBackend_UploadTextureAsset);
 typedef RENDER_BACKEND_CLEAR(RenderBackend_Clear);
-typedef RENDER_BACKEND_SET_VIEWPORT(RenderBackend_SetViewport);
 typedef RENDER_BACKEND_SET_UNIFORM(RenderBackend_SetUniform);
 typedef RENDER_BACKEND_ON_FULLSCREEN_CHANGED(RenderBackend_OnFullscreenChanged);
 
@@ -96,6 +94,8 @@ struct RenderBackend
 	mat4 modelView;
 	mat4 projection;
 
+	Viewport viewport;
+
 	int numDrawCalls;
 	int currNumDrawCalls;
 
@@ -104,7 +104,6 @@ struct RenderBackend
 	RenderBackend_DrawCircles         *DrawCircles;
 	RenderBackend_UploadTextureAsset  *UploadTextureAsset;
 	RenderBackend_Clear               *Clear;
-	RenderBackend_SetViewport         *SetViewport;
 	RenderBackend_SetUniform          *SetUniform;
 	RenderBackend_OnFullscreenChanged *OnFullscreenChanged;
 };

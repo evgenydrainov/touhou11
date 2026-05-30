@@ -267,7 +267,6 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 	backend->DrawCircles = OpenGLRenderBackendDrawCircles;
 	backend->UploadTextureAsset = OpenGLRenderBackendUploadTextureAsset;
 	backend->Clear = OpenGLRenderBackendClear;
-	backend->SetViewport = OpenGLRenderBackendSetViewport;
 	backend->SetUniform = OpenGLRenderBackendSetUniform;
 	backend->OnFullscreenChanged = OpenGLRenderBackendOnFullscreenChanged;
 
@@ -448,6 +447,11 @@ OpenGLRenderBackendDrawPrimitives(RenderBackend *backend,
 
 		gl->Disable(GL_CULL_FACE);
 
+		gl->Viewport(backend->viewport.x,
+					 /*backend->targetHeight - backend->viewport.height -*/ backend->viewport.y,
+					 backend->viewport.width,
+					 backend->viewport.height);
+
 		if (data->gl_version == OpenGLContextVersion_1_1)
 		{
 			gl->MatrixMode(GL_MODELVIEW);
@@ -579,14 +583,6 @@ RENDER_BACKEND_CLEAR(OpenGLRenderBackendClear)
 	gl->Clear(GL_COLOR_BUFFER_BIT);
 }
 
-RENDER_BACKEND_SET_VIEWPORT(OpenGLRenderBackendSetViewport)
-{
-	RenderBackendOpenGLData *data = (RenderBackendOpenGLData *)backend->userdata;
-	OpenGLFunctions *gl = data->gl;
-
-	gl->Viewport(x, backend->targetHeight - height - y, width, height);
-}
-
 RENDER_BACKEND_SET_UNIFORM(OpenGLRenderBackendSetUniform)
 {
 	RenderBackendOpenGLData *data = (RenderBackendOpenGLData *)backend->userdata;
@@ -674,10 +670,11 @@ OpenGLRenderBackendPresent(RenderBackend *backend)
 		};
 
 		gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
-		gl->Viewport(0, 0, backend->windowWidth, backend->windowHeight);
 
 		gl->ClearColor(0, 0, 0, 1);
 		gl->Clear(GL_COLOR_BUFFER_BIT);
+
+		backend->viewport = {0, 0, backend->windowWidth, backend->windowHeight};
 
 		{
 			bool enableBlending = backend->enableBlending;
