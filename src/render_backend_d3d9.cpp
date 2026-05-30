@@ -188,7 +188,7 @@ D3D9RenderBackendInit(RenderBackend *backend,
 						D3DVERTEXELEMENT9 vertexDeclDesc[] = {
 							{
 								0,
-								(WORD)OffsetOf(RenderVertex2D, x),
+								(WORD)OffsetOf(RenderVertex2D, pos),
 								D3DDECLTYPE_FLOAT2,
 								D3DDECLMETHOD_DEFAULT,
 								D3DDECLUSAGE_POSITION,
@@ -196,7 +196,7 @@ D3D9RenderBackendInit(RenderBackend *backend,
 							},
 							{
 								0,
-								(WORD)OffsetOf(RenderVertex2D, u),
+								(WORD)OffsetOf(RenderVertex2D, texCoord),
 								D3DDECLTYPE_FLOAT2,
 								D3DDECLMETHOD_DEFAULT,
 								D3DDECLUSAGE_TEXCOORD,

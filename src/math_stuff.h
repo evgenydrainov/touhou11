@@ -13,6 +13,10 @@ union vec2
 	{
 		f32 r, g;
 	};
+	struct
+	{
+		f32 u, v;
+	};
 	f32 e[2];
 
 	vec2 &operator+=(vec2 other)

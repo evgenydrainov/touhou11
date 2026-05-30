@@ -79,10 +79,10 @@ DrawQuad(Renderer *renderer,
 
 	u32 colorU32 = ColorVec4ToU32(color);
 
-	renderer->vertices[renderer->num_vertices++] = {x0, y0, u0, v0, colorU32};
-	renderer->vertices[renderer->num_vertices++] = {x1, y1, u1, v0, colorU32};
-	renderer->vertices[renderer->num_vertices++] = {x2, y2, u1, v1, colorU32};
-	renderer->vertices[renderer->num_vertices++] = {x3, y3, u0, v1, colorU32};
+	renderer->vertices[renderer->num_vertices++] = {V2(x0, y0), V2(u0, v0), colorU32};
+	renderer->vertices[renderer->num_vertices++] = {V2(x1, y1), V2(u1, v0), colorU32};
+	renderer->vertices[renderer->num_vertices++] = {V2(x2, y2), V2(u1, v1), colorU32};
+	renderer->vertices[renderer->num_vertices++] = {V2(x3, y3), V2(u0, v1), colorU32};
 }
 
 static void
@@ -500,8 +500,8 @@ DrawCircle(Renderer *renderer, RenderBackend *backend, GameAssets *assets,
 
 	u32 colorU32 = ColorVec4ToU32(color);
 
-	renderer->vertices[renderer->num_vertices++] = {x0, y0, u0, v0, colorU32};
-	renderer->vertices[renderer->num_vertices++] = {x1, y1, u1, v0, colorU32};
-	renderer->vertices[renderer->num_vertices++] = {x2, y2, u1, v1, colorU32};
-	renderer->vertices[renderer->num_vertices++] = {x3, y3, u0, v1, colorU32};
+	renderer->vertices[renderer->num_vertices++] = {V2(x0, y0), V2(u0, v0), colorU32};
+	renderer->vertices[renderer->num_vertices++] = {V2(x1, y1), V2(u1, v0), colorU32};
+	renderer->vertices[renderer->num_vertices++] = {V2(x2, y2), V2(u1, v1), colorU32};
+	renderer->vertices[renderer->num_vertices++] = {V2(x3, y3), V2(u0, v1), colorU32};
 }

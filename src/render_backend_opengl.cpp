@@ -364,20 +364,20 @@ OpenGLRenderBackendSetVertexLayout(RenderBackend *backend,
 	if (data->gl_version == OpenGLContextVersion_1_1)
 	{
 		gl->EnableClientState(GL_VERTEX_ARRAY);
-		gl->VertexPointer(2, GL_FLOAT, sizeof(RenderVertex2D), (u8*)vertices + OffsetOf(RenderVertex2D, x));
+		gl->VertexPointer(2, GL_FLOAT, sizeof(RenderVertex2D), (u8*)vertices + OffsetOf(RenderVertex2D, pos));
 
 		gl->EnableClientState(GL_TEXTURE_COORD_ARRAY);
-		gl->TexCoordPointer(2, GL_FLOAT, sizeof(RenderVertex2D), (u8*)vertices + OffsetOf(RenderVertex2D, u));
+		gl->TexCoordPointer(2, GL_FLOAT, sizeof(RenderVertex2D), (u8*)vertices + OffsetOf(RenderVertex2D, texCoord));
 
 		gl->EnableClientState(GL_COLOR_ARRAY);
 		gl->ColorPointer(4, GL_UNSIGNED_BYTE, sizeof(RenderVertex2D), (u8*)vertices + OffsetOf(RenderVertex2D, color));
 	}
 	else
 	{
-		gl->VertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(RenderVertex2D), (void*)OffsetOf(RenderVertex2D, x));
+		gl->VertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(RenderVertex2D), (void*)OffsetOf(RenderVertex2D, pos));
 		gl->EnableVertexAttribArray(0);
 
-		gl->VertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(RenderVertex2D), (void*)OffsetOf(RenderVertex2D, u));
+		gl->VertexAttribPointer(1, 2, GL_FLOAT, false, sizeof(RenderVertex2D), (void*)OffsetOf(RenderVertex2D, texCoord));
 		gl->EnableVertexAttribArray(1);
 
 		gl->VertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, sizeof(RenderVertex2D), (void*)OffsetOf(RenderVertex2D, color));
@@ -667,10 +667,10 @@ OpenGLRenderBackendPresent(RenderBackend *backend)
 		f32 y2 = (f32)(viewport.y + viewport.height);
 
 		RenderVertex2D vertices[] = {
-			{x1, y1, 0.0f, 1.0f, 0xffffffff},
-			{x2, y1, 1.0f, 1.0f, 0xffffffff},
-			{x2, y2, 1.0f, 0.0f, 0xffffffff},
-			{x1, y2, 0.0f, 0.0f, 0xffffffff},
+			{V2(x1, y1), V2(0.0f, 1.0f), 0xffffffff},
+			{V2(x2, y1), V2(1.0f, 1.0f), 0xffffffff},
+			{V2(x2, y2), V2(1.0f, 0.0f), 0xffffffff},
+			{V2(x1, y2), V2(0.0f, 0.0f), 0xffffffff},
 		};
 
 		gl->BindFramebuffer(GL_FRAMEBUFFER, 0);

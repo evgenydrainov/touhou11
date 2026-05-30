@@ -24,20 +24,20 @@ SoftwareRenderBackendDrawLine(RenderBackendSoftwareData *data,
 							  RenderVertex2D vertex1,
 							  RenderVertex2D vertex2)
 {
-	vertex1.x = data->viewport.x + (vertex1.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex1.y = data->viewport.y + (vertex1.y + 1.0f) * 0.5f * data->viewport.height;
+	vertex1.pos.x = data->viewport.x + (vertex1.pos.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex1.pos.y = data->viewport.y + (vertex1.pos.y + 1.0f) * 0.5f * data->viewport.height;
 
-	vertex2.x = data->viewport.x + (vertex2.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex2.y = data->viewport.y + (vertex2.y + 1.0f) * 0.5f * data->viewport.height;
+	vertex2.pos.x = data->viewport.x + (vertex2.pos.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex2.pos.y = data->viewport.y + (vertex2.pos.y + 1.0f) * 0.5f * data->viewport.height;
 
-	vertex1.y = data->backbuffer_height - vertex1.y;
-	vertex2.y = data->backbuffer_height - vertex2.y;
+	vertex1.pos.y = data->backbuffer_height - vertex1.pos.y;
+	vertex2.pos.y = data->backbuffer_height - vertex2.pos.y;
 
-	i32 x1 = (i32)vertex1.x;
-	i32 y1 = (i32)vertex1.y;
+	i32 x1 = (i32)vertex1.pos.x;
+	i32 y1 = (i32)vertex1.pos.y;
 
-	i32 x2 = (i32)vertex2.x;
-	i32 y2 = (i32)vertex2.y;
+	i32 x2 = (i32)vertex2.pos.x;
+	i32 y2 = (i32)vertex2.pos.y;
 
 	bool is_steep = Abs(x1 - x2) < Abs(y1 - y2);
 	if (is_steep)
@@ -117,27 +117,27 @@ SoftwareRenderBackendDrawTriangle(RenderBackendSoftwareData *data,
 								  RenderVertex2D vertex2,
 								  RenderVertex2D vertex3)
 {
-	vertex1.x = data->viewport.x + (vertex1.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex1.y = data->viewport.y + (vertex1.y + 1.0f) * 0.5f * data->viewport.height;
+	vertex1.pos.x = data->viewport.x + (vertex1.pos.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex1.pos.y = data->viewport.y + (vertex1.pos.y + 1.0f) * 0.5f * data->viewport.height;
 
-	vertex2.x = data->viewport.x + (vertex2.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex2.y = data->viewport.y + (vertex2.y + 1.0f) * 0.5f * data->viewport.height;
+	vertex2.pos.x = data->viewport.x + (vertex2.pos.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex2.pos.y = data->viewport.y + (vertex2.pos.y + 1.0f) * 0.5f * data->viewport.height;
 
-	vertex3.x = data->viewport.x + (vertex3.x + 1.0f) * 0.5f * data->viewport.width;
-	vertex3.y = data->viewport.y + (vertex3.y + 1.0f) * 0.5f * data->viewport.height;
+	vertex3.pos.x = data->viewport.x + (vertex3.pos.x + 1.0f) * 0.5f * data->viewport.width;
+	vertex3.pos.y = data->viewport.y + (vertex3.pos.y + 1.0f) * 0.5f * data->viewport.height;
 
-	vertex1.y = data->backbuffer_height - vertex1.y;
-	vertex2.y = data->backbuffer_height - vertex2.y;
-	vertex3.y = data->backbuffer_height - vertex3.y;
+	vertex1.pos.y = data->backbuffer_height - vertex1.pos.y;
+	vertex2.pos.y = data->backbuffer_height - vertex2.pos.y;
+	vertex3.pos.y = data->backbuffer_height - vertex3.pos.y;
 
-	i32 x1 = RoundFloat32ToInt32(vertex1.x);
-	i32 y1 = RoundFloat32ToInt32(vertex1.y);
+	i32 x1 = RoundFloat32ToInt32(vertex1.pos.x);
+	i32 y1 = RoundFloat32ToInt32(vertex1.pos.y);
 
-	i32 x2 = RoundFloat32ToInt32(vertex2.x);
-	i32 y2 = RoundFloat32ToInt32(vertex2.y);
+	i32 x2 = RoundFloat32ToInt32(vertex2.pos.x);
+	i32 y2 = RoundFloat32ToInt32(vertex2.pos.y);
 
-	i32 x3 = RoundFloat32ToInt32(vertex3.x);
-	i32 y3 = RoundFloat32ToInt32(vertex3.y);
+	i32 x3 = RoundFloat32ToInt32(vertex3.pos.x);
+	i32 y3 = RoundFloat32ToInt32(vertex3.pos.y);
 
 	i32 bbminx = Min(x1, x2, x3);
 	i32 bbminy = Min(y1, y2, y3);
@@ -174,8 +174,8 @@ SoftwareRenderBackendDrawTriangle(RenderBackendSoftwareData *data,
 
 			if (alpha >= 0 && beta >= 0 && gamma >= 0)
 			{
-				f32 u = (f32)(alpha*vertex1.u + beta*vertex2.u + gamma*vertex3.u);
-				f32 v = (f32)(alpha*vertex1.v + beta*vertex2.v + gamma*vertex3.v);
+				f32 u = (f32)(alpha*vertex1.texCoord.u + beta*vertex2.texCoord.u + gamma*vertex3.texCoord.u);
+				f32 v = (f32)(alpha*vertex1.texCoord.v + beta*vertex2.texCoord.v + gamma*vertex3.texCoord.v);
 
 				u32 srcColor = SampleTexture(texturePixels, textureWidth, textureHeight, u, v);
 				f32 srcR = ((srcColor >> 16) & 0xff) / 255.0f;
@@ -219,10 +219,10 @@ RENDER_BACKEND_DRAW_QUADS(SoftwareRenderBackendDrawQuads)
 			RenderVertex2D vertex2 = vertices[vertex_index+2];
 			RenderVertex2D vertex3 = vertices[vertex_index+3];
 
-			vertex0.pos = (backend->projection * V4(vertex0.x, vertex0.y, 0.0f, 1.0f)).xy;
-			vertex1.pos = (backend->projection * V4(vertex1.x, vertex1.y, 0.0f, 1.0f)).xy;
-			vertex2.pos = (backend->projection * V4(vertex2.x, vertex2.y, 0.0f, 1.0f)).xy;
-			vertex3.pos = (backend->projection * V4(vertex3.x, vertex3.y, 0.0f, 1.0f)).xy;
+			vertex0.pos = (backend->projection * V4(vertex0.pos.x, vertex0.pos.y, 0.0f, 1.0f)).xy;
+			vertex1.pos = (backend->projection * V4(vertex1.pos.x, vertex1.pos.y, 0.0f, 1.0f)).xy;
+			vertex2.pos = (backend->projection * V4(vertex2.pos.x, vertex2.pos.y, 0.0f, 1.0f)).xy;
+			vertex3.pos = (backend->projection * V4(vertex3.pos.x, vertex3.pos.y, 0.0f, 1.0f)).xy;
 
 #if 1
 			SoftwareRenderBackendDrawTriangle(data,
