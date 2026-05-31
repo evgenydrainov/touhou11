@@ -28,6 +28,10 @@ struct RenderBackendOpenGLData
 
 	u32 shaders[ShaderIndex_COUNT];
 
+	u32 currentFrameBuffer;
+	int currentFrameBufferWidth;
+	int currentFrameBufferHeight;
+
 	OpenGLFunctions *gl;
 	OpenGLContextVersion gl_version;
 };

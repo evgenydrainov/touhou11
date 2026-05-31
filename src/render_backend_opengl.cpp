@@ -244,6 +244,25 @@ LoadShaderFromStrings(RenderBackendOpenGLData *data,
 	return program;
 }
 
+static void
+OpenGLBindFrameBuffer(RenderBackend *backend,
+					  u32 frameBuffer,
+					  int frameBufferWidth,
+					  int frameBufferHeight)
+{
+	RenderBackendOpenGLData *data = (RenderBackendOpenGLData *)backend->userdata;
+	OpenGLFunctions *gl = data->gl;
+
+	if (data->currentFrameBuffer != frameBuffer)
+	{
+		gl->BindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+	}
+
+	data->currentFrameBuffer = frameBuffer;
+	data->currentFrameBufferWidth = frameBufferWidth;
+	data->currentFrameBufferHeight = frameBufferHeight;
+}
+
 void
 OpenGLRenderBackendInit(RenderBackend *backend,
 						OpenGLContextVersion gl_version,
@@ -256,11 +275,13 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 
 	usize arenaSavePos = arena->pos;
 
+	data->renderToMainFramebuffer = true;
 	data->gl = gl;
 	data->gl_version = gl_version;
 	data->mainFrameBufferWidth = mainFrameBufferWidth;
 	data->mainFrameBufferHeight = mainFrameBufferHeight;
-	data->renderToMainFramebuffer = true;
+	data->numQuadIndices = 6*maxNumQuads;
+	data->vertexBufferSize = sizeof(RenderVertex2D)*maxNumQuads*4;
 
 	backend->DrawQuads = OpenGLRenderBackendDrawQuads;
 	backend->DrawTriangles3D = OpenGLRenderBackendDrawTriangles3D;
@@ -269,9 +290,6 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 	backend->Clear = OpenGLRenderBackendClear;
 	backend->SetUniform = OpenGLRenderBackendSetUniform;
 	backend->OnFullscreenChanged = OpenGLRenderBackendOnFullscreenChanged;
-
-	data->numQuadIndices = 6*maxNumQuads;
-	data->vertexBufferSize = sizeof(RenderVertex2D)*maxNumQuads*4;
 
 	if (gl_version != OpenGLContextVersion_1_1)
 	{
@@ -317,7 +335,7 @@ OpenGLRenderBackendInit(RenderBackend *backend,
 			gl->TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mainFrameBufferWidth, mainFrameBufferHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 			gl->GenFramebuffers(1, &data->mainFrameBuffer);
-			gl->BindFramebuffer(GL_FRAMEBUFFER, data->mainFrameBuffer);
+			OpenGLBindFrameBuffer(backend, data->mainFrameBuffer, mainFrameBufferWidth, mainFrameBufferHeight);
 			gl->FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, data->mainFrameBufferTexture, 0);
 		}
 	}
@@ -448,7 +466,7 @@ OpenGLRenderBackendDrawPrimitives(RenderBackend *backend,
 		gl->Disable(GL_CULL_FACE);
 
 		gl->Viewport(backend->viewport.x,
-					 /*backend->targetHeight - backend->viewport.height -*/ backend->viewport.y,
+					 data->currentFrameBufferHeight - backend->viewport.height - backend->viewport.y,
 					 backend->viewport.width,
 					 backend->viewport.height);
 
@@ -624,14 +642,14 @@ OpenGLRenderBackendPrepareDraw(RenderBackend *backend)
 
 	if (data->renderToMainFramebuffer)
 	{
-		gl->BindFramebuffer(GL_FRAMEBUFFER, data->mainFrameBuffer);
+		OpenGLBindFrameBuffer(backend, data->mainFrameBuffer, data->mainFrameBufferWidth, data->mainFrameBufferHeight);
 
 		backend->targetWidth = data->mainFrameBufferWidth;
 		backend->targetHeight = data->mainFrameBufferHeight;
 	}
 	else
 	{
-		gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
+		OpenGLBindFrameBuffer(backend, 0, backend->windowWidth, backend->windowHeight);
 
 		backend->targetWidth = backend->windowWidth;
 		backend->targetHeight = backend->windowHeight;
@@ -669,7 +687,7 @@ OpenGLRenderBackendPresent(RenderBackend *backend)
 			{V2(x1, y2), V2(0.0f, 0.0f), 0xffffffff},
 		};
 
-		gl->BindFramebuffer(GL_FRAMEBUFFER, 0);
+		OpenGLBindFrameBuffer(backend, 0, backend->windowWidth, backend->windowHeight);
 
 		gl->ClearColor(0, 0, 0, 1);
 		gl->Clear(GL_COLOR_BUFFER_BIT);
@@ -678,8 +696,13 @@ OpenGLRenderBackendPresent(RenderBackend *backend)
 
 		{
 			bool enableBlending = backend->enableBlending;
+			defer { backend->enableBlending = enableBlending; };
+
 			RenderFilter minFilter = backend->minFilter;
+			defer { backend->minFilter = minFilter; };
+
 			RenderFilter magFilter = backend->magFilter;
+			defer { backend->magFilter = magFilter; };
 
 			backend->enableBlending = false;
 			backend->minFilter = RenderFilter_Linear;
@@ -688,10 +711,6 @@ OpenGLRenderBackendPresent(RenderBackend *backend)
 			OpenGLRenderBackendDrawPrimitives(backend, GL_QUADS,
 											  data->mainFrameBufferTexture,
 											  vertices, ArrayLength(vertices));
-
-			backend->enableBlending = enableBlending;
-			backend->minFilter = minFilter;
-			backend->magFilter = magFilter;
 		}
 	}
 }

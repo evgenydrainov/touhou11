@@ -122,6 +122,26 @@ StrCpy(char *dest, const char *src)
 
 #define GetTaggedUnion(entity, EnumT, name) (Assert((entity)->type == EnumT##_##name), &(entity)->_##name)
 
+template <typename T>
+struct ExitScope
+{
+	T lambda;
+	ExitScope(T lambda) : lambda(lambda) {}
+	~ExitScope() { lambda(); }
+	ExitScope(const ExitScope&);
+private:
+	ExitScope &operator=(const ExitScope&);
+};
+
+class ExitScopeHelp
+{
+public:
+	template <typename T>
+	ExitScope<T> operator+(T t) { return t; }
+};
+
+#define defer const auto &CONCATENATE(_defer, __LINE__) = ExitScopeHelp() + [&]()
+
 enum LogLevel : u32
 {
 	LogLevel_Info,
